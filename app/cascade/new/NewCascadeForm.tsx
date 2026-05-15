@@ -54,6 +54,7 @@ export default function NewCascadeForm({ profiles, defaultProfileId }: NewCascad
       router.push(`/cascade/${cascade_id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
       setIsGenerating(false)
     }
   }

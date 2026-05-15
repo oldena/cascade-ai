@@ -28,6 +28,14 @@ export default async function DashboardPage() {
       .limit(10),
   ])
 
+  if (userRes.error) {
+    // User row missing — likely sync delay after Clerk signup
+    redirect('/sign-in')
+  }
+  // For profiles and cascades, log errors but degrade gracefully
+  if (profilesRes.error) console.error('[dashboard] profiles fetch:', profilesRes.error.message)
+  if (cascadesRes.error) console.error('[dashboard] cascades fetch:', cascadesRes.error.message)
+
   const user = userRes.data
   const profiles = profilesRes.data ?? []
   const cascades = cascadesRes.data ?? []

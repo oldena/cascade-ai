@@ -14,7 +14,7 @@ export default async function NewCascadePage({ searchParams }: PageProps) {
   if (!userId) redirect('/sign-in')
 
   const params = await searchParams
-  const defaultProfileId = params.profile
+  const profileIdParam = params.profile
 
   const { data: profiles } = await supabaseAdmin
     .from('client_profiles')
@@ -23,6 +23,10 @@ export default async function NewCascadePage({ searchParams }: PageProps) {
     .order('created_at', { ascending: false })
 
   const profileList = profiles ?? []
+
+  const defaultProfileId = profileIdParam && profileList.some((p) => p.id === profileIdParam)
+    ? profileIdParam
+    : (profileList[0]?.id ?? undefined)
 
   return (
     <div className="min-h-screen bg-cascade-dark">
