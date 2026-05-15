@@ -41,8 +41,7 @@ export interface Output {
   cascade_id: string
   format: OutputFormat
   content: string
-  kept: boolean
-  discarded: boolean
+  status: 'pending' | 'kept' | 'discarded'
   approved_by_client: boolean
   created_at: string
 }
@@ -52,6 +51,7 @@ export interface ApprovalLink {
   cascade_id: string
   token: string
   expires_at: string
+  consumed_at: string | null
   created_at: string
 }
 

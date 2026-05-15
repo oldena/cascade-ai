@@ -1,4 +1,6 @@
-export function buildSystemPrompt(profile: any): string {
+import { ClientProfile } from '@/types'
+
+export function buildSystemPrompt(profile: ClientProfile): string {
   return '' // TODO
 }
 export function linkedinPrompt(): string { return '' }
