@@ -243,3 +243,21 @@ create policy "publish_jobs_own" on publish_jobs for all
       where c.user_id = app_user_id()
     )
   );
+
+-- ---------------------------------------------------------------------------
+-- ATOMIC CASCADE COUNT INCREMENT
+-- ---------------------------------------------------------------------------
+-- Atomic cascade count increment, returns new count
+create or replace function increment_cascade_count(user_id text)
+returns integer language plpgsql as $$
+declare
+  new_count integer;
+begin
+  update users
+  set cascade_count_this_month = cascade_count_this_month + 1,
+      updated_at = now()
+  where id = user_id
+  returning cascade_count_this_month into new_count;
+  return new_count;
+end;
+$$;
