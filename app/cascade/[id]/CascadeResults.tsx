@@ -33,7 +33,7 @@ export function CascadeResults({ cascade, outputs, cascadeId }: Props) {
       <div className="flex gap-1 bg-cascade-card border border-cascade-border rounded-xl p-1 mb-6 overflow-x-auto">
         {FORMAT_ORDER.map(format => {
           const output = outputByFormat[format]
-          const failed = (output?.status as string) === 'failed'
+          const failed = output?.status === 'failed'
           return (
             <button
               key={format}
@@ -55,7 +55,7 @@ export function CascadeResults({ cascade, outputs, cascadeId }: Props) {
 
       {/* Content */}
       {activeOutput ? (
-        (activeOutput.status as string) === 'failed' ? (
+        activeOutput.status === 'failed' ? (
           <div className="bg-red-950 border border-red-800 rounded-xl p-8 text-center">
             <p className="text-red-400 font-medium mb-2">Generation failed for this format</p>
             <p className="text-red-600 text-sm">Try regenerating the cascade or check your API key.</p>

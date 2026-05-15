@@ -41,7 +41,7 @@ export interface Output {
   cascade_id: string
   format: OutputFormat
   content: string
-  status: 'pending' | 'kept' | 'discarded'
+  status: 'pending' | 'generating' | 'done' | 'kept' | 'discarded' | 'failed'
   approved_by_client: boolean
   created_at: string
 }
