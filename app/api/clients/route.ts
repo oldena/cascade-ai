@@ -26,19 +26,9 @@ export async function POST(req: Request) {
   const name = (formData.get('name') as string | null)?.trim()
   if (!name) return Response.json({ error: 'name is required' }, { status: 400 })
 
-  let tone_words: string[] = []
-  let example_posts: string[] = []
-  let avoid_topics: string[] = []
-  try {
-    const tw = formData.get('tone_words')
-    if (tw) tone_words = JSON.parse(tw as string)
-    const ep = formData.get('example_posts')
-    if (ep) example_posts = JSON.parse(ep as string)
-    const at = formData.get('avoid_topics')
-    if (at) avoid_topics = JSON.parse(at as string)
-  } catch {
-    return Response.json({ error: 'Invalid JSON in form fields' }, { status: 400 })
-  }
+  const tone_words = (() => { try { const v = JSON.parse(formData.get('tone_words') as string ?? '[]'); return Array.isArray(v) ? v.filter((x: unknown) => typeof x === 'string') : [] } catch { return [] } })()
+  const example_posts = (() => { try { const v = JSON.parse(formData.get('example_posts') as string ?? '[]'); return Array.isArray(v) ? v.filter((x: unknown) => typeof x === 'string') : [] } catch { return [] } })()
+  const avoid_topics = (() => { try { const v = JSON.parse(formData.get('avoid_topics') as string ?? '[]'); return Array.isArray(v) ? v.filter((x: unknown) => typeof x === 'string') : [] } catch { return [] } })()
 
   const cta_style = (formData.get('cta_style') as string | null) ?? ''
 

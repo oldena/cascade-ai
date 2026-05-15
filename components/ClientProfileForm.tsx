@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, KeyboardEvent } from 'react'
+import { useState, KeyboardEvent } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ClientProfileFormProps {
@@ -113,8 +113,6 @@ export default function ClientProfileForm({
   const [avoidTopics, setAvoidTopics] = useState<string[]>(initialData?.avoid_topics ?? [])
   const [ctaStyle, setCtaStyle] = useState(initialData?.cta_style ?? '')
 
-  const formRef = useRef<HTMLFormElement>(null)
-
   const examplePostsLines = examplePostsText
     .split('\n')
     .map((l) => l.trim())
@@ -133,7 +131,7 @@ export default function ClientProfileForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-1">
         <label className="block text-sm font-medium text-white">
           Client Name <span className="text-cascade-red">*</span>
