@@ -13,7 +13,12 @@ export async function POST(req: Request) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json() as { input_text: string; client_profile_id: string }
+  let body: { input_text: string; client_profile_id: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const { input_text, client_profile_id } = body
 
   if (!input_text?.trim()) return NextResponse.json({ error: 'input_text is required' }, { status: 400 })
@@ -43,14 +48,16 @@ export async function POST(req: Request) {
 
   const cascadeId = cascade.id
   const systemPrompt = buildSystemPrompt(profile as ClientProfile)
+  const JSON_FORMATS: OutputFormat[] = ['carousel', 'emails', 'reels', 'twitter_thread']
 
   // Fire all 6 format calls in parallel
   const results = await Promise.allSettled(
     ALL_FORMATS.map(async (format) => {
       const userPrompt = FORMAT_PROMPTS[format](input_text)
+      const max_tokens = JSON_FORMATS.includes(format) ? 4096 : 2048
       const message = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2048,
+        max_tokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       })
@@ -58,6 +65,13 @@ export async function POST(req: Request) {
       return { format, content }
     })
   )
+
+  // Log individual format failures
+  results.forEach((result, idx) => {
+    if (result.status === 'rejected') {
+      console.error(`[generate] format ${ALL_FORMATS[idx]} failed:`, result.reason)
+    }
+  })
 
   // Save all outputs
   const outputInserts = results.map((result, idx) => {
@@ -67,13 +81,17 @@ export async function POST(req: Request) {
     return { cascade_id: cascadeId, format: ALL_FORMATS[idx], content: '', status: 'failed' }
   })
 
-  await supabaseAdmin.from('outputs').insert(outputInserts)
+  const { error: outputError } = await supabaseAdmin.from('outputs').insert(outputInserts)
+  if (outputError) {
+    console.error('[generate] outputs insert failed:', outputError.message)
+    // Still continue — cascade is created, log the issue
+  }
 
-  // Update cascade status
-  const allSucceeded = results.every(r => r.status === 'fulfilled')
+  // Update cascade status: 'done' if at least 1 succeeded, 'failed' only if ALL failed
+  const anySucceeded = results.some(r => r.status === 'fulfilled')
   await supabaseAdmin
     .from('cascades')
-    .update({ status: allSucceeded ? 'done' : 'failed' })
+    .update({ status: anySucceeded ? 'done' : 'failed' })
     .eq('id', cascadeId)
 
   return NextResponse.json({ cascade_id: cascadeId })

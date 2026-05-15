@@ -7,7 +7,7 @@ CLIENT: ${profile.name}
 TONE: ${profile.tone_words.join(', ') || 'Professional, clear, engaging'}
 CTA STYLE: ${profile.cta_style || 'End with an engaging question or soft call-to-action'}
 AVOID: ${profile.avoid_topics.join(', ') || 'Nothing specific'}
-${profile.example_posts.length > 0 ? `\nEXAMPLE POSTS (match this style and voice):\n${profile.example_posts.map((p, i) => `--- Example ${i + 1} ---\n${p}`).join('\n\n')}` : ''}
+${profile.example_posts.length > 0 ? `\n<example_posts>\n${profile.example_posts.map((p, i) => `<post index="${i + 1}">${p}</post>`).join('\n')}\n</example_posts>` : ''}
 
 Write ONLY the requested content. No preamble, no "here is your post:", no meta-commentary. Output the content directly.`
 }
@@ -15,8 +15,9 @@ Write ONLY the requested content. No preamble, no "here is your post:", no meta-
 export function linkedinPrompt(input: string): string {
   return `Transform this content into a high-performing LinkedIn post.
 
-SOURCE CONTENT:
+<source_content>
 ${input}
+</source_content>
 
 REQUIREMENTS:
 - Max 3000 characters total
@@ -34,8 +35,9 @@ Output the post directly. Start with the hook, end with hashtags.`
 export function carouselPrompt(input: string): string {
   return `Transform this content into a 10-slide LinkedIn/Instagram carousel.
 
-SOURCE CONTENT:
+<source_content>
 ${input}
+</source_content>
 
 REQUIREMENTS:
 - Exactly 10 slides
@@ -55,8 +57,9 @@ Output as valid JSON array. No markdown, no code blocks, just the JSON:
 export function emailsPrompt(input: string): string {
   return `Transform this content into 3 email variations for the same message.
 
-SOURCE CONTENT:
+<source_content>
 ${input}
+</source_content>
 
 REQUIREMENTS:
 - 3 distinct variations with different angles/tones
@@ -78,8 +81,9 @@ Output as valid JSON. No markdown, no code blocks:
 export function reelsPrompt(input: string): string {
   return `Transform this content into 3 short-form video script options (Reels/Shorts/TikTok).
 
-SOURCE CONTENT:
+<source_content>
 ${input}
+</source_content>
 
 REQUIREMENTS:
 - 3 distinct hook + caption combinations
@@ -100,8 +104,9 @@ Output as valid JSON. No markdown, no code blocks:
 export function twitterThreadPrompt(input: string): string {
   return `Transform this content into a Twitter/X thread of 6 tweets.
 
-SOURCE CONTENT:
+<source_content>
 ${input}
+</source_content>
 
 REQUIREMENTS:
 - Exactly 6 tweets
@@ -125,8 +130,9 @@ Output as valid JSON. No markdown, no code blocks:
 export function newsletterPrompt(input: string): string {
   return `Transform this content into a newsletter section.
 
-SOURCE CONTENT:
+<source_content>
 ${input}
+</source_content>
 
 REQUIREMENTS:
 - 300-500 words
