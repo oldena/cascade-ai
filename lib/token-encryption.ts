@@ -42,6 +42,9 @@ export async function encrypt(text: string): Promise<string> {
 export async function decrypt(text: string): Promise<string> {
   const key = getKey()
   const combined = Buffer.from(text, 'base64')
+  if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH + 1) {
+    throw new Error('decrypt: ciphertext too short — data may be corrupted')
+  }
 
   const iv = combined.subarray(0, IV_LENGTH)
   const authTag = combined.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH)

@@ -18,12 +18,8 @@ export function truncate(str: string, max: number): string {
 }
 
 export function generateToken(length = 32): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let token = ''
-  const randomValues = new Uint8Array(length)
-  crypto.getRandomValues(randomValues)
-  for (const val of randomValues) {
-    token += chars[val % chars.length]
-  }
-  return token
+  return Buffer.from(
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('crypto').randomBytes(Math.ceil(length * 3 / 4))
+  ).toString('base64url').slice(0, length)
 }

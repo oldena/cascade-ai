@@ -258,6 +258,37 @@ begin
       updated_at = now()
   where id = user_id
   returning cascade_count_this_month into new_count;
+  if new_count is null then
+    raise exception 'User % not found', user_id;
+  end if;
+  return new_count;
+end;
+$$;
+
+-- Atomic check-and-increment: only increments if under limit. Returns new count or -1 if at limit.
+create or replace function check_and_increment_cascade(p_user_id text, p_limit integer)
+returns integer language plpgsql as $$
+declare
+  current_count integer;
+  new_count integer;
+begin
+  select cascade_count_this_month into current_count
+  from users where id = p_user_id for update;
+
+  if current_count is null then
+    raise exception 'User % not found', p_user_id;
+  end if;
+
+  if current_count >= p_limit then
+    return -1; -- at limit
+  end if;
+
+  update users
+  set cascade_count_this_month = cascade_count_this_month + 1,
+      updated_at = now()
+  where id = p_user_id
+  returning cascade_count_this_month into new_count;
+
   return new_count;
 end;
 $$;
