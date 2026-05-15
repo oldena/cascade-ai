@@ -20,8 +20,7 @@ export async function POST(req: Request) {
     return new Response('Missing svix headers', { status: 400 })
   }
 
-  const payload = await req.json()
-  const body = JSON.stringify(payload)
+  const body = await req.text()
 
   const wh = new Webhook(WEBHOOK_SECRET)
   let evt: WebhookEvent
@@ -36,29 +35,29 @@ export async function POST(req: Request) {
     return new Response('Invalid signature', { status: 400 })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabaseAdmin as any
-
   if (evt.type === 'user.created') {
     const { id, email_addresses } = evt.data
     const email = email_addresses[0]?.email_address ?? ''
-    await db.from('users').insert({
+    const { error } = await supabaseAdmin.from('users').insert({
       id,
       email,
       plan: 'starter',
     })
+    if (error) return new Response('DB insert failed', { status: 500 })
   }
 
   if (evt.type === 'user.updated') {
     const { id, email_addresses } = evt.data
     const email = email_addresses[0]?.email_address ?? ''
-    await db.from('users').update({ email }).eq('id', id)
+    const { error } = await supabaseAdmin.from('users').update({ email, updated_at: new Date().toISOString() }).eq('id', id)
+    if (error) return new Response('DB update failed', { status: 500 })
   }
 
   if (evt.type === 'user.deleted') {
     const { id } = evt.data
     if (id) {
-      await db.from('users').delete().eq('id', id)
+      const { error } = await supabaseAdmin.from('users').delete().eq('id', id)
+      if (error) return new Response('DB delete failed', { status: 500 })
     }
   }
 
