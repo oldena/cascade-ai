@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { OutputCard } from '@/components/OutputCard'
-import type { Output } from '@/types'
+import type { Output, SocialAccount } from '@/types'
 
 const FORMAT_LABELS: Record<string, string> = {
   linkedin: 'LinkedIn',
@@ -18,9 +18,10 @@ const FORMAT_ORDER = ['linkedin', 'carousel', 'emails', 'reels', 'twitter_thread
 interface Props {
   outputs: Output[]
   cascadeId: string
+  connectedAccounts: SocialAccount[]
 }
 
-export function CascadeResults({ outputs, cascadeId }: Props) {
+export function CascadeResults({ outputs, cascadeId, connectedAccounts }: Props) {
   const [activeTab, setActiveTab] = useState(FORMAT_ORDER[0])
 
   const outputByFormat = Object.fromEntries(outputs.map(o => [o.format, o]))
@@ -60,7 +61,7 @@ export function CascadeResults({ outputs, cascadeId }: Props) {
             <p className="text-red-600 text-sm">Try regenerating the cascade or check your API key.</p>
           </div>
         ) : (
-          <OutputCard output={activeOutput} cascadeId={cascadeId} />
+          <OutputCard output={activeOutput} cascadeId={cascadeId} connectedAccounts={connectedAccounts} />
         )
       ) : (
         <div className="bg-cascade-card border border-cascade-border rounded-xl p-8 text-center">

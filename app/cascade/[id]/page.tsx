@@ -19,11 +19,20 @@ export default async function CascadePage({ params }: { params: Promise<{ id: st
 
   if (error || !cascade) notFound()
 
-  const { data: outputs } = await supabaseAdmin
-    .from('outputs')
-    .select('*')
-    .eq('cascade_id', id)
-    .order('created_at')
+  const [outputsRes, accountsRes] = await Promise.all([
+    supabaseAdmin
+      .from('outputs')
+      .select('*')
+      .eq('cascade_id', id)
+      .order('created_at'),
+    supabaseAdmin
+      .from('social_accounts')
+      .select('id, platform, display_name, avatar_url, connected_at, page_id')
+      .eq('user_id', userId),
+  ])
+
+  const outputs = outputsRes.data
+  const accounts = accountsRes.data ?? []
 
   return (
     <div className="min-h-screen bg-cascade-dark">
@@ -36,7 +45,7 @@ export default async function CascadePage({ params }: { params: Promise<{ id: st
         <p className="text-cascade-muted mb-8">
           For {(cascade as any).client_profiles?.name ?? 'Unknown client'} · {new Date(cascade.created_at).toLocaleDateString()}
         </p>
-        <CascadeResults outputs={outputs ?? []} cascadeId={id} />
+        <CascadeResults outputs={outputs ?? []} cascadeId={id} connectedAccounts={accounts as any} />
       </div>
     </div>
   )

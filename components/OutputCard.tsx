@@ -1,13 +1,15 @@
 'use client'
 import { useState } from 'react'
-import type { Output } from '@/types'
+import type { Output, SocialAccount } from '@/types'
+import { PublishPanel } from './PublishPanel'
 
 interface Props {
   output: Output
   cascadeId: string
+  connectedAccounts: SocialAccount[]
 }
 
-export function OutputCard({ output, cascadeId }: Props) {
+export function OutputCard({ output, cascadeId, connectedAccounts }: Props) {
   const [content, setContent] = useState(output.content)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -99,9 +101,8 @@ export function OutputCard({ output, cascadeId }: Props) {
         </div>
       )}
 
-      {/* Publish placeholder — will be wired up in Task 9 */}
       <div className="mt-6 pt-4 border-t border-cascade-border">
-        <p className="text-cascade-muted text-xs">Publishing controls coming soon</p>
+        <PublishPanel outputId={output.id} connectedAccounts={connectedAccounts} />
       </div>
     </div>
   )
