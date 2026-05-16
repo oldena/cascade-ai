@@ -29,10 +29,10 @@ export async function publishTikTokDraft(
   }
 
   const data = (await res.json()) as { data?: { publish_id?: string } }
-  const publishId = data.data?.publish_id ?? 'draft'
-
+  const publishId = data.data?.publish_id
+  if (!publishId) throw new Error('TikTok API returned no publish_id')
   return {
     post_id: publishId,
-    post_url: 'https://www.tiktok.com/creator-center/upload', // redirect user to finish upload
+    post_url: 'https://www.tiktok.com/creator-center/upload',
   }
 }

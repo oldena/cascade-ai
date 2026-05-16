@@ -40,7 +40,7 @@ export async function publishCarouselToInstagram(
   const carouselRes = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ media_type: 'CAROUSEL', children: itemIds.join(','), caption }),
+    body: JSON.stringify({ media_type: 'CAROUSEL', children: itemIds, caption }),
   })
   if (!carouselRes.ok) throw new Error(`Carousel container failed: ${await carouselRes.text()}`)
   const { id: containerId } = (await carouselRes.json()) as { id: string }
@@ -54,5 +54,17 @@ export async function publishCarouselToInstagram(
   if (!publishRes.ok) throw new Error(`Carousel publish failed: ${await publishRes.text()}`)
   const { id: postId } = (await publishRes.json()) as { id: string }
 
-  return { post_id: postId, post_url: `https://www.instagram.com/p/${postId}/` }
+  // Fetch real permalink (numeric ID != shortcode)
+  const permalinkRes = await fetch(
+    `https://graph.facebook.com/v19.0/${postId}?fields=permalink`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+  const permalinkData = permalinkRes.ok
+    ? await permalinkRes.json() as { permalink?: string }
+    : {}
+
+  return {
+    post_id: postId,
+    post_url: permalinkData.permalink ?? `https://www.instagram.com/`,
+  }
 }

@@ -8,6 +8,12 @@ export async function publishTwitterThread(
 ): Promise<{ post_id: string; post_url: string }> {
   if (!tweets.length) throw new Error('No tweets to publish')
 
+  // Validate all tweet lengths before making any API calls
+  const invalid = tweets.findIndex(t => t.content.length > 280)
+  if (invalid !== -1) {
+    throw new Error(`Tweet ${invalid + 1} exceeds 280 characters (${tweets[invalid].content.length} chars)`)
+  }
+
   let firstTweetId: string | null = null
   let lastTweetId: string | null = null
 

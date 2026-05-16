@@ -292,3 +292,21 @@ begin
   return new_count;
 end;
 $$;
+
+-- Move stale 'publishing' jobs to 'failed' (jobs stuck > 5 minutes)
+-- Called by the scheduled cron job
+create or replace function recover_stale_publish_jobs()
+returns integer language plpgsql as $$
+declare
+  affected integer;
+begin
+  update publish_jobs
+  set status = 'failed',
+      error_message = 'Job timed out — server may have crashed during publishing',
+      updated_at = now()
+  where status = 'publishing'
+    and created_at < now() - interval '5 minutes';
+  get diagnostics affected = row_count;
+  return affected;
+end;
+$$;
