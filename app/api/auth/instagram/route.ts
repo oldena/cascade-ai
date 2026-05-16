@@ -1,12 +1,13 @@
+import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { buildOAuthState } from '@/lib/oauth-helpers'
+import { createOAuthState } from '@/lib/oauth-helpers'
 
 export async function GET() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
-  const state = buildOAuthState(userId)
+  const state = await createOAuthState(userId, 'instagram')
   const params = new URLSearchParams({
     client_id: process.env.INSTAGRAM_APP_ID!,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/instagram/callback`,

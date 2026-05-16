@@ -1,6 +1,6 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
-import { upsertSocialAccount } from '@/lib/oauth-helpers'
+import { validateOAuthState, upsertSocialAccount } from '@/lib/oauth-helpers'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -12,18 +12,11 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=tiktok_denied`)
   }
 
-  let userId: string, codeVerifier: string
-  try {
-    const decoded = JSON.parse(Buffer.from(stateParam, 'base64url').toString('utf8')) as {
-      userId?: string
-      codeVerifier?: string
-    }
-    if (!decoded.userId || !decoded.codeVerifier) throw new Error('missing')
-    userId = decoded.userId
-    codeVerifier = decoded.codeVerifier
-  } catch {
+  const stateData = await validateOAuthState(stateParam, 'tiktok')
+  if (!stateData || !stateData.codeVerifier) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=invalid_state`)
   }
+  const { userId, codeVerifier } = stateData
 
   // Exchange code
   const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
@@ -53,7 +46,10 @@ export async function GET(req: Request) {
     expires_in?: number
   }
 
-  const accessToken = tokenData.data?.access_token ?? tokenData.access_token ?? ''
+  const accessToken = tokenData.data?.access_token ?? tokenData.access_token
+  if (!accessToken) {
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=tiktok_token`)
+  }
 
   // Fetch user info
   const userRes = await fetch(

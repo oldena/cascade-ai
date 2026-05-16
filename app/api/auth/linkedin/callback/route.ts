@@ -1,6 +1,6 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
-import { parseOAuthState, upsertSocialAccount } from '@/lib/oauth-helpers'
+import { validateOAuthState, upsertSocialAccount } from '@/lib/oauth-helpers'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -12,8 +12,9 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=linkedin_denied`)
   }
 
-  const parsed = parseOAuthState(state)
-  if (!parsed) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=invalid_state`)
+  const stateData = await validateOAuthState(state, 'linkedin')
+  if (!stateData) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=invalid_state`)
+  const { userId } = stateData
 
   // Exchange code for token
   const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -43,6 +44,7 @@ export async function GET(req: Request) {
     'https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))',
     { headers: { Authorization: `Bearer ${accessToken}` } }
   )
+  if (!profileRes.ok) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=linkedin_profile`)
   const profile = await profileRes.json() as {
     id: string
     localizedFirstName?: string
@@ -59,7 +61,7 @@ export async function GET(req: Request) {
   const avatar =
     profile.profilePicture?.['displayImage~']?.elements?.[0]?.identifiers?.[0]?.identifier ?? ''
 
-  await upsertSocialAccount(parsed.userId, 'linkedin', {
+  await upsertSocialAccount(userId, 'linkedin', {
     access_token: accessToken,
     expires_in: tokenData.expires_in,
     platform_user_id: profile.id,

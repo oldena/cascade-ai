@@ -1,12 +1,13 @@
+import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { buildOAuthState } from '@/lib/oauth-helpers'
+import { createOAuthState } from '@/lib/oauth-helpers'
 
 export async function GET() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
-  const state = buildOAuthState(userId)
+  const state = await createOAuthState(userId, 'linkedin')
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.LINKEDIN_CLIENT_ID!,

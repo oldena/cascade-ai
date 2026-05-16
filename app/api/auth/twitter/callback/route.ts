@@ -1,6 +1,6 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
-import { upsertSocialAccount } from '@/lib/oauth-helpers'
+import { validateOAuthState, upsertSocialAccount } from '@/lib/oauth-helpers'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -12,18 +12,11 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=twitter_denied`)
   }
 
-  let userId: string, codeVerifier: string
-  try {
-    const decoded = JSON.parse(Buffer.from(stateParam, 'base64url').toString('utf8')) as {
-      userId?: string
-      codeVerifier?: string
-    }
-    if (!decoded.userId || !decoded.codeVerifier) throw new Error('missing fields')
-    userId = decoded.userId
-    codeVerifier = decoded.codeVerifier
-  } catch {
+  const stateData = await validateOAuthState(stateParam, 'twitter')
+  if (!stateData || !stateData.codeVerifier) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=invalid_state`)
   }
+  const { userId, codeVerifier } = stateData
 
   // Exchange code
   const credentials = Buffer.from(
@@ -57,6 +50,7 @@ export async function GET(req: Request) {
     'https://api.twitter.com/2/users/me?user.fields=profile_image_url,name',
     { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
   )
+  if (!userRes.ok) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=twitter_profile`)
   const userData = await userRes.json() as {
     data?: {
       id: string

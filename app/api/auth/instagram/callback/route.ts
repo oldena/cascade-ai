@@ -1,6 +1,6 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
-import { parseOAuthState, upsertSocialAccount } from '@/lib/oauth-helpers'
+import { validateOAuthState, upsertSocialAccount } from '@/lib/oauth-helpers'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -12,8 +12,9 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=instagram_denied`)
   }
 
-  const parsed = parseOAuthState(state)
-  if (!parsed) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=invalid_state`)
+  const stateData = await validateOAuthState(state, 'instagram')
+  if (!stateData) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=invalid_state`)
+  const { userId } = stateData
 
   // Exchange code for token
   const tokenUrl = new URL('https://graph.facebook.com/v19.0/oauth/access_token')
@@ -33,9 +34,10 @@ export async function GET(req: Request) {
   const accessToken = tokenData.access_token
 
   // Get user info
-  const meRes = await fetch(
-    `https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${accessToken}`
-  )
+  const meRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name,picture`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!meRes.ok) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?error=instagram_profile`)
   const me = await meRes.json() as {
     id: string
     name?: string
@@ -44,7 +46,8 @@ export async function GET(req: Request) {
 
   // Get Instagram business account
   const igAccountsRes = await fetch(
-    `https://graph.facebook.com/v19.0/${me.id}/accounts?fields=instagram_business_account{id,name,profile_picture_url}&access_token=${accessToken}`
+    `https://graph.facebook.com/v19.0/${me.id}/accounts?fields=instagram_business_account{id,name,profile_picture_url}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   )
   const igAccounts = await igAccountsRes.json() as {
     data?: Array<{
@@ -57,7 +60,7 @@ export async function GET(req: Request) {
   }
   const igAccount = igAccounts.data?.[0]?.instagram_business_account
 
-  await upsertSocialAccount(parsed.userId, 'instagram', {
+  await upsertSocialAccount(userId, 'instagram', {
     access_token: accessToken,
     platform_user_id: igAccount?.id ?? me.id,
     display_name: igAccount?.name ?? me.name ?? 'Instagram User',

@@ -1,6 +1,8 @@
 import 'server-only'
-import { encrypt } from '@/lib/token-encryption'
+import { cookies } from 'next/headers'
+import { encrypt, decrypt } from '@/lib/token-encryption'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { randomBytes } from 'crypto'
 import type { Platform } from '@/types'
 
 export interface OAuthTokens {
@@ -35,24 +37,63 @@ export async function upsertSocialAccount(
     token_expires_at: expiresAt,
     page_id: tokens.page_id ?? null,
     connected_at: new Date().toISOString(),
-  }, {
-    onConflict: 'user_id,platform,platform_user_id',
+  }, { onConflict: 'user_id,platform,platform_user_id' })
+}
+
+const OAUTH_COOKIE = 'oauth_state'
+
+interface OAuthStateData {
+  userId: string
+  nonce: string
+  codeVerifier?: string
+  platform: Platform
+}
+
+/**
+ * Stores OAuth state + optional PKCE verifier in an encrypted HttpOnly cookie.
+ * Returns the state string (nonce) to include in the OAuth redirect URL.
+ */
+export async function createOAuthState(userId: string, platform: Platform, codeVerifier?: string): Promise<string> {
+  const nonce = randomBytes(16).toString('hex')
+  const stateData: OAuthStateData = { userId, nonce, platform, codeVerifier }
+  const cookieStore = await cookies()
+  const cookieValue = await encrypt(JSON.stringify(stateData))
+  cookieStore.set(OAUTH_COOKIE, cookieValue, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600, // 10 minutes
+    path: '/',
   })
+  // Return only the nonce as the state param (used for correlation)
+  return nonce
 }
 
-export function buildOAuthState(userId: string): string {
-  // Simple state: base64(userId + ':' + randomNonce)
-  const nonce = Math.random().toString(36).slice(2)
-  return Buffer.from(`${userId}:${nonce}`).toString('base64url')
-}
+/**
+ * Validates the callback state param against the cookie.
+ * Returns OAuthStateData if valid, null otherwise.
+ * Deletes the cookie after validation (one-time use).
+ */
+export async function validateOAuthState(stateParam: string, expectedPlatform: Platform): Promise<OAuthStateData | null> {
+  const cookieStore = await cookies()
+  const cookieValue = cookieStore.get(OAUTH_COOKIE)?.value
+  if (!cookieValue) return null
 
-export function parseOAuthState(state: string): { userId: string } | null {
+  // Delete cookie immediately (one-time use)
+  cookieStore.delete(OAUTH_COOKIE)
+
+  let stateData: OAuthStateData
   try {
-    const decoded = Buffer.from(state, 'base64url').toString('utf8')
-    const [userId] = decoded.split(':')
-    if (!userId) return null
-    return { userId }
+    const decrypted = await decrypt(cookieValue)
+    stateData = JSON.parse(decrypted)
   } catch {
     return null
   }
+
+  // Verify nonce matches + platform matches
+  if (stateData.nonce !== stateParam) return null
+  if (stateData.platform !== expectedPlatform) return null
+  if (!stateData.userId) return null
+
+  return stateData
 }
