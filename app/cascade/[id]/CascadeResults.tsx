@@ -4,6 +4,73 @@ import { cn } from '@/lib/utils'
 import { OutputCard } from '@/components/OutputCard'
 import type { Output, SocialAccount } from '@/types'
 
+function ShareApprovalButton({ cascadeId }: { cascadeId: string }) {
+  const [loading, setLoading] = useState(false)
+  const [url, setUrl] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleShare() {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cascadeId }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to generate link')
+        return
+      }
+      setUrl(data.url)
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleCopy() {
+    if (!url) return
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="mb-6">
+      {!url ? (
+        <div className="flex items-center gap-3">
+          <button
+            disabled={loading}
+            onClick={handleShare}
+            className="px-4 py-2 bg-cascade-card border border-cascade-border hover:border-white/30 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {loading ? 'Generating link…' : 'Share for approval'}
+          </button>
+          {error && <span className="text-red-400 text-sm">{error}</span>}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            readOnly
+            value={url}
+            className="flex-1 bg-cascade-card border border-cascade-border rounded-lg px-3 py-2 text-sm text-cascade-muted font-mono truncate focus:outline-none"
+          />
+          <button
+            onClick={handleCopy}
+            className="px-3 py-2 bg-cascade-card border border-cascade-border hover:border-white/30 text-sm text-white rounded-lg transition-colors whitespace-nowrap"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const FORMAT_LABELS: Record<string, string> = {
   linkedin: 'LinkedIn',
   carousel: 'Carousel',
@@ -29,6 +96,9 @@ export function CascadeResults({ outputs, cascadeId, connectedAccounts }: Props)
 
   return (
     <div>
+      {/* Share for approval */}
+      <ShareApprovalButton cascadeId={cascadeId} />
+
       {/* Tab bar */}
       <div className="flex gap-1 bg-cascade-card border border-cascade-border rounded-xl p-1 mb-6 overflow-x-auto">
         {FORMAT_ORDER.map(format => {

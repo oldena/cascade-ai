@@ -4,6 +4,7 @@ export interface User {
   id: string
   email: string
   stripe_customer_id: string | null
+  stripe_subscription_id: string | null
   plan: Plan
   created_at: string
 }
@@ -24,7 +25,7 @@ export interface Cascade {
   user_id: string
   client_profile_id: string
   input_text: string
-  status: 'pending' | 'generating' | 'done' | 'failed'
+  status: 'pending' | 'generating' | 'done' | 'failed' | 'approved' | 'needs_revision'
   created_at: string
 }
 

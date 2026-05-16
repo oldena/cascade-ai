@@ -75,9 +75,9 @@ export function SettingsClient({ user, accounts: initialAccounts }: Props) {
             style={{ width: `${Math.min(100, (cascadeCount / limits.cascades) * 100)}%` }}
           />
         </div>
-        {plan === 'starter' && (
-          <a href="/settings/billing" className="text-cascade-red text-sm hover:underline">Upgrade to Agency →</a>
-        )}
+        <a href="/settings/billing" className="text-cascade-red text-sm hover:underline">
+          {plan === 'agency' ? 'Manage Billing →' : 'Upgrade to Agency →'}
+        </a>
       </div>
 
       {/* Connected accounts section */}

@@ -3,10 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { decrypt } from '@/lib/token-encryption'
-import { publishToLinkedIn } from '@/lib/publishers/linkedin'
-import { publishToInstagram } from '@/lib/publishers/instagram'
-import { publishTwitterThread, publishSingleTweet } from '@/lib/publishers/twitter'
-import { publishTikTokDraft } from '@/lib/publishers/tiktok'
+import { executePublish } from '@/lib/publishers'
 import type { Platform } from '@/types'
 
 export async function POST(req: Request) {
@@ -88,40 +85,4 @@ export async function POST(req: Request) {
   }).eq('id', job.id)
 
   return NextResponse.json({ job_id: job.id, post_url: postResult.post_url })
-}
-
-async function executePublish(
-  platform: Platform,
-  accessToken: string,
-  account: any,
-  output: any
-): Promise<{ post_id: string; post_url: string }> {
-  const content: string = output.content
-  const format: string = output.format
-
-  switch (platform) {
-    case 'linkedin': {
-      return publishToLinkedIn(accessToken, content, account.platform_user_id, !!account.page_id)
-    }
-    case 'instagram': {
-      return publishToInstagram(accessToken, account.platform_user_id, content)
-    }
-    case 'twitter': {
-      // For twitter_thread format, parse JSON array of tweets
-      if (format === 'twitter_thread') {
-        try {
-          const tweets = JSON.parse(content) as Array<{ content: string }>
-          return publishTwitterThread(accessToken, tweets)
-        } catch {
-          return publishSingleTweet(accessToken, content)
-        }
-      }
-      return publishSingleTweet(accessToken, content)
-    }
-    case 'tiktok': {
-      return publishTikTokDraft(accessToken, content)
-    }
-    default:
-      throw new Error(`Unsupported platform: ${platform}`)
-  }
 }

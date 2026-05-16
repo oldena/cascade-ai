@@ -1,10 +1,12 @@
 import 'server-only'
 import { auth } from '@clerk/nextjs/server'
+import { clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { anthropic } from '@/lib/anthropic'
 import { buildSystemPrompt, FORMAT_PROMPTS } from '@/lib/prompts'
 import { checkAndIncrementCascade } from '@/lib/limits'
+import { sendCascadeCompleteEmail } from '@/lib/email'
 import type { OutputFormat, ClientProfile } from '@/types'
 
 const ALL_FORMATS: OutputFormat[] = ['linkedin', 'carousel', 'emails', 'reels', 'twitter_thread', 'newsletter']
@@ -93,6 +95,25 @@ export async function POST(req: Request) {
     .from('cascades')
     .update({ status: anySucceeded ? 'done' : 'failed' })
     .eq('id', cascadeId)
+
+  // Fire-and-forget: email the user when cascade generation completes
+  if (anySucceeded) {
+    try {
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(userId)
+      const userEmail = clerkUser.emailAddresses[0]?.emailAddress
+      if (userEmail) {
+        const outputCount = results.filter(r => r.status === 'fulfilled').length
+        sendCascadeCompleteEmail(userEmail, {
+          cascadeName: (profile as ClientProfile).name,
+          cascadeId,
+          outputCount,
+        }).catch(err => console.error('[generate] email send failed:', err))
+      }
+    } catch (err) {
+      console.error('[generate] failed to fetch user email for notification:', err)
+    }
+  }
 
   return NextResponse.json({ cascade_id: cascadeId })
 }
