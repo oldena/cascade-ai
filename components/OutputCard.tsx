@@ -12,6 +12,7 @@ export function OutputCard({ output, cascadeId }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // For carousel and structured formats, try to parse as JSON
   const isStructured = ['carousel', 'emails', 'reels', 'twitter_thread'].includes(output.format)
@@ -23,17 +24,22 @@ export function OutputCard({ output, cascadeId }: Props) {
 
   const handleSave = async () => {
     setIsSaving(true)
+    setSaveError(null)
     try {
-      await fetch(`/api/outputs/${output.id}`, {
+      const res = await fetch(`/api/outputs/${output.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error ?? `Save failed (${res.status})`)
+      }
       setSaved(true)
       setIsEditing(false)
       setTimeout(() => setSaved(false), 2000)
-    } catch {
-      // silently fail for now — TODO: show error
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Save failed')
     } finally {
       setIsSaving(false)
     }
@@ -73,11 +79,16 @@ export function OutputCard({ output, cascadeId }: Props) {
 
       {/* Content display or edit */}
       {isEditing ? (
-        <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          className="w-full bg-cascade-dark border border-cascade-border text-white rounded-lg px-4 py-3 text-sm font-mono resize-y min-h-[300px] focus:outline-none focus:border-cascade-red"
-        />
+        <>
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            className="w-full bg-cascade-dark border border-cascade-border text-white rounded-lg px-4 py-3 text-sm font-mono resize-y min-h-[300px] focus:outline-none focus:border-cascade-red"
+          />
+          {saveError && (
+            <div className="mt-2 text-red-400 text-sm">{saveError}</div>
+          )}
+        </>
       ) : (
         <div className="text-white text-sm whitespace-pre-wrap leading-relaxed">
           {isStructured && parsedContent ? (
@@ -141,7 +152,7 @@ function StructuredView({ format, data }: { format: string; data: any }) {
       <div className="space-y-3">
         {data.map((tweet: any) => (
           <div key={tweet.tweet} className="border border-cascade-border rounded-lg p-3">
-            <div className="text-xs text-cascade-muted mb-1">{tweet.tweet}/6 · {tweet.content.length} chars</div>
+            <div className="text-xs text-cascade-muted mb-1">{tweet.tweet}/{data.length} · {tweet.content.length} chars</div>
             <div className="text-white text-sm">{tweet.content}</div>
           </div>
         ))}

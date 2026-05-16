@@ -36,7 +36,7 @@ export default async function CascadePage({ params }: { params: Promise<{ id: st
         <p className="text-cascade-muted mb-8">
           For {(cascade as any).client_profiles?.name ?? 'Unknown client'} · {new Date(cascade.created_at).toLocaleDateString()}
         </p>
-        <CascadeResults cascade={cascade} outputs={outputs ?? []} cascadeId={id} />
+        <CascadeResults outputs={outputs ?? []} cascadeId={id} />
       </div>
     </div>
   )

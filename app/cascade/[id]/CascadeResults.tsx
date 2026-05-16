@@ -16,12 +16,11 @@ const FORMAT_LABELS: Record<string, string> = {
 const FORMAT_ORDER = ['linkedin', 'carousel', 'emails', 'reels', 'twitter_thread', 'newsletter']
 
 interface Props {
-  cascade: any
   outputs: Output[]
   cascadeId: string
 }
 
-export function CascadeResults({ cascade, outputs, cascadeId }: Props) {
+export function CascadeResults({ outputs, cascadeId }: Props) {
   const [activeTab, setActiveTab] = useState(FORMAT_ORDER[0])
 
   const outputByFormat = Object.fromEntries(outputs.map(o => [o.format, o]))

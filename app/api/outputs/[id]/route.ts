@@ -11,6 +11,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { content } = await req.json()
 
   if (typeof content !== 'string') return NextResponse.json({ error: 'content must be a string' }, { status: 400 })
+  if (content.length > 100_000) {
+    return NextResponse.json({ error: 'Content too long (max 100,000 chars)' }, { status: 400 })
+  }
 
   // Verify ownership via cascade
   const { data: output } = await supabaseAdmin
