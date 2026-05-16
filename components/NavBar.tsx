@@ -1,18 +1,41 @@
+'use client'
+
 import Link from 'next/link'
 import { UserButton } from '@clerk/nextjs'
 
 export function NavBar() {
   return (
-    <nav className="border-b border-cascade-border bg-cascade-card px-6 py-4 flex items-center justify-between">
+    <nav className="h-16 border-b border-cascade-border bg-transparent px-6 flex items-center justify-between">
       <div className="flex items-center gap-8">
-        <Link href="/dashboard" className="text-xl font-bold text-white tracking-tight">
-          Cascade
+        {/* Logo */}
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-cascade-red flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-bold text-sm leading-none">N</span>
+          </div>
+          <div className="flex flex-col leading-none">
+            <span className="text-cascade-text font-bold text-base tracking-wide">NAOM</span>
+            <span className="text-cascade-muted text-[9px] tracking-widest uppercase">Multi-Agent Platform</span>
+          </div>
         </Link>
+
+        {/* Nav links */}
         <div className="flex gap-6">
-          <Link href="/dashboard" className="text-cascade-muted hover:text-white transition-colors text-sm">Dashboard</Link>
-          <Link href="/settings" className="text-cascade-muted hover:text-white transition-colors text-sm">Settings</Link>
+          <Link
+            href="/dashboard"
+            className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="#"
+            className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
+          >
+            Calendrier
+          </Link>
         </div>
       </div>
+
+      {/* Right: user avatar */}
       <UserButton />
     </nav>
   )

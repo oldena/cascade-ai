@@ -85,3 +85,50 @@ export interface PublishJob {
   published_at: string | null
   created_at: string
 }
+
+// ---------------------------------------------------------------------------
+// Agents platform
+// ---------------------------------------------------------------------------
+
+export interface Agent {
+  id: string
+  slug: string
+  name: string
+  role: string
+  specialty: string
+  system_prompt: string
+  avatar_emoji: string
+  avatar_color: string
+  sort_order: number
+  is_featured: boolean
+  created_at: string
+}
+
+export interface Conversation {
+  id: string
+  user_id: string
+  agent_id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Message {
+  id: string
+  conversation_id: string
+  role: 'user' | 'assistant'
+  content: string
+  tokens_used: number | null
+  created_at: string
+}
+
+export interface Deliverable {
+  id: string
+  user_id: string
+  agent_id: string
+  conversation_id: string | null
+  title: string
+  content: string
+  format: string
+  created_at: string
+}
