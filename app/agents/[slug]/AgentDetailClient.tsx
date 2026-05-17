@@ -40,13 +40,20 @@ export default function AgentDetailClient({
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  // Prevents loadMessages from overwriting temp messages during send
+  const skipNextLoadRef = useRef(false)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   async function loadMessages(conversationId: string) {
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false
+      return
+    }
     const res = await fetch(`/api/messages?conversationId=${conversationId}`).catch(() => null)
     if (!res?.ok) return
     const data: Message[] = await res.json()
@@ -59,7 +66,8 @@ export default function AgentDetailClient({
     } else {
       setMessages([])
     }
-  }, [activeConversation])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation?.id])
 
   async function createConversation() {
     const res = await fetch('/api/conversations', {
@@ -78,8 +86,10 @@ export default function AgentDetailClient({
   async function sendMessage(text: string) {
     if (!text.trim() || isStreaming) return
 
+    setChatError(null)
     let conv = activeConversation
     if (!conv) {
+      skipNextLoadRef.current = true  // prevent useEffect from clearing temp messages
       const created = await createConversation()
       if (!created) return
       conv = created
@@ -118,6 +128,10 @@ export default function AgentDetailClient({
       })
 
       if (!res.ok || !res.body) {
+        const errText = await res.text().catch(() => `Erreur ${res.status}`)
+        console.error('[chat] API error:', res.status, errText)
+        setChatError(`Erreur ${res.status}: ${errText}`)
+        setMessages((prev) => prev.slice(0, -1)) // remove empty assistant bubble
         setIsStreaming(false)
         return
       }
@@ -294,6 +308,14 @@ export default function AgentDetailClient({
                   </button>
                 )}
               </div>
+
+              {/* Error banner */}
+              {chatError && (
+                <div className="mx-6 mt-3 bg-red-900/30 border border-red-700 text-red-300 text-sm px-4 py-2 rounded-lg flex justify-between items-center">
+                  <span>{chatError}</span>
+                  <button onClick={() => setChatError(null)} className="ml-3 opacity-70 hover:opacity-100">✕</button>
+                </div>
+              )}
 
               {/* Messages list */}
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">

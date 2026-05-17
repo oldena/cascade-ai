@@ -132,3 +132,28 @@ export interface Deliverable {
   format: string
   created_at: string
 }
+
+// ---------------------------------------------------------------------------
+// Pipeline
+// ---------------------------------------------------------------------------
+
+export interface PipelineRun {
+  id: string
+  user_id: string
+  brief: string
+  status: 'pending' | 'running' | 'done' | 'failed'
+  created_at: string
+  updated_at: string
+}
+
+export interface PipelineStep {
+  id: string
+  run_id: string
+  agent_slug: string
+  agent_name: string
+  step_order: number
+  status: 'pending' | 'running' | 'done' | 'failed'
+  output: string
+  created_at: string
+  updated_at: string
+}

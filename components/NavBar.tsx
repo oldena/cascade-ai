@@ -27,6 +27,12 @@ export function NavBar() {
             Dashboard
           </Link>
           <Link
+            href="/pipeline"
+            className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
+          >
+            Pipeline
+          </Link>
+          <Link
             href="#"
             className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
           >
