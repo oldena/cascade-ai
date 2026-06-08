@@ -56,7 +56,7 @@ export interface ApprovalLink {
   created_at: string
 }
 
-export type Platform = 'linkedin' | 'instagram' | 'twitter' | 'tiktok'
+export type Platform = 'linkedin' | 'instagram' | 'twitter' | 'tiktok' | 'facebook'
 
 export interface SocialAccount {
   id: string

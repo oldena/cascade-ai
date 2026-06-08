@@ -2,6 +2,36 @@ import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ runId: string }> }
+) {
+  const { userId } = await auth()
+  if (!userId) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: JSON_HEADERS })
+  }
+
+  const { runId } = await params
+
+  const { data: run } = await supabaseAdmin
+    .from('pipeline_runs')
+    .select('id')
+    .eq('id', runId)
+    .eq('user_id', userId)
+    .single()
+
+  if (!run) {
+    return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: JSON_HEADERS })
+  }
+
+  await supabaseAdmin.from('pipeline_steps').delete().eq('run_id', runId)
+  await supabaseAdmin.from('pipeline_runs').delete().eq('id', runId)
+
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: JSON_HEADERS })
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ runId: string }> }

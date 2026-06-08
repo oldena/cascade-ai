@@ -46,11 +46,30 @@ export default async function AgentDetailPage({ params }: Props) {
     (d) => d.agent_id === agent.id
   )
 
+  // Token sum for this agent's conversations
+  let tokensUsed = 0
+  if (conversations.length > 0) {
+    const convIds = conversations.map((c) => c.id)
+    const { data: msgs } = await supabaseAdmin
+      .from('messages')
+      .select('tokens_used')
+      .in('conversation_id', convIds)
+    tokensUsed = (msgs ?? []).reduce((sum, m) => sum + (m.tokens_used ?? 0), 0)
+  }
+
+  // Success rate: conversations that produced at least one deliverable
+  const convIdsWithDeliverable = new Set(deliverables.map((d) => d.conversation_id).filter(Boolean))
+  const successRate = conversations.length > 0
+    ? Math.round((convIdsWithDeliverable.size / conversations.length) * 100)
+    : 0
+
   return (
     <AgentDetailClient
       agent={agent}
       initialConversations={conversations}
       initialDeliverables={deliverables}
+      tokensUsed={tokensUsed}
+      successRate={successRate}
     />
   )
 }

@@ -1,12 +1,24 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Agent, Conversation, Deliverable, Message } from '@/types'
+
+type AttachedFile = {
+  id: string
+  name: string
+  mimeType: string
+  content: string   // text content OR base64 data URL for images
+  isImage: boolean
+  isText: boolean
+}
 
 interface Props {
   agent: Agent
   initialConversations: Conversation[]
   initialDeliverables: Deliverable[]
+  tokensUsed: number
+  successRate: number
 }
 
 type Tab = 'chat' | 'analytics' | 'fichiers' | 'historique'
@@ -25,11 +37,20 @@ function formatDate(iso: string) {
   })
 }
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`
+  return n.toString()
+}
+
 export default function AgentDetailClient({
   agent,
   initialConversations,
   initialDeliverables,
+  tokensUsed,
+  successRate,
 }: Props) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('chat')
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
   const [deliverables, setDeliverables] = useState<Deliverable[]>(initialDeliverables)
@@ -41,7 +62,9 @@ export default function AgentDetailClient({
   const [isStreaming, setIsStreaming] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [chatError, setChatError] = useState<string | null>(null)
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   // Prevents loadMessages from overwriting temp messages during send
   const skipNextLoadRef = useRef(false)
 
@@ -69,6 +92,61 @@ export default function AgentDetailClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConversation?.id])
 
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    const processed: AttachedFile[] = []
+
+    for (const file of files) {
+      const isImage = file.type.startsWith('image/')
+      const isText =
+        !isImage &&
+        (file.type.startsWith('text/') ||
+          ['application/json', 'application/xml'].includes(file.type) ||
+          /\.(txt|md|csv|json|xml|yaml|yml|html|css|js|ts)$/i.test(file.name))
+
+      const content = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (ev) => resolve((ev.target?.result as string) ?? '')
+        if (isImage) {
+          reader.readAsDataURL(file)
+        } else if (isText) {
+          reader.readAsText(file)
+        } else {
+          // unsupported type — store name only
+          resolve('')
+        }
+      })
+
+      processed.push({
+        id: `${Date.now()}-${Math.random()}`,
+        name: file.name,
+        mimeType: file.type,
+        content,
+        isImage,
+        isText,
+      })
+    }
+
+    setAttachedFiles((prev) => [...prev, ...processed])
+    e.target.value = ''
+  }
+
+  function removeFile(id: string) {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== id))
+  }
+
+  function downloadMessage(content: string) {
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${agent.name}-${Date.now()}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   async function createConversation() {
     const res = await fetch('/api/conversations', {
       method: 'POST',
@@ -95,11 +173,36 @@ export default function AgentDetailClient({
       conv = created
     }
 
+    // Inject text file contents into the message
+    const textFiles = attachedFiles.filter((f) => f.isText && f.content)
+    const imageFiles = attachedFiles.filter((f) => f.isImage && f.content)
+    const otherFiles = attachedFiles.filter((f) => !f.isText && !f.isImage)
+
+    let fullMessage = text
+    if (textFiles.length > 0) {
+      const ctx = textFiles
+        .map((f) => `--- Fichier: ${f.name} ---\n${f.content}\n--- Fin: ${f.name} ---`)
+        .join('\n\n')
+      fullMessage = `${ctx}\n\n${text}`
+    }
+    if (otherFiles.length > 0) {
+      const names = otherFiles.map((f) => f.name).join(', ')
+      fullMessage = `[Fichiers joints: ${names}]\n\n${fullMessage}`
+    }
+
+    // Display label in chat shows original text + file names
+    const displayLabel =
+      attachedFiles.length > 0
+        ? `${text}\n\n📎 ${attachedFiles.map((f) => f.name).join(', ')}`
+        : text
+
+    setAttachedFiles([])
+
     const userMsg: Message = {
       id: `tmp-user-${Date.now()}`,
       conversation_id: conv.id,
       role: 'user',
-      content: text,
+      content: displayLabel,
       tokens_used: null,
       created_at: new Date().toISOString(),
     }
@@ -122,8 +225,9 @@ export default function AgentDetailClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           conversationId: conv.id,
-          message: text,
+          message: fullMessage,
           agentSlug: agent.slug,
+          imageAttachments: imageFiles.map((f) => ({ name: f.name, dataUrl: f.content })),
         }),
       })
 
@@ -208,6 +312,17 @@ export default function AgentDetailClient({
     <div className="flex h-screen bg-cascade-bg text-cascade-text overflow-hidden">
       {/* Left sidebar */}
       <aside className="w-64 flex-shrink-0 bg-cascade-surface-2 border-r border-cascade-border flex flex-col items-center py-8 px-4 gap-5">
+        {/* Back button */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="self-start flex items-center gap-1.5 text-xs text-cascade-muted hover:text-cascade-text transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Accueil
+        </button>
+
         {/* Avatar */}
         <div
           className="w-28 h-28 rounded-2xl flex items-center justify-center"
@@ -231,10 +346,10 @@ export default function AgentDetailClient({
         {/* Stat pills */}
         <div className="flex flex-col gap-2 w-full">
           <div className="bg-cascade-surface border border-cascade-border rounded-lg px-3 py-2 text-center">
-            <span className="text-cascade-text-2 text-xs font-mono">1.2M TOKENS · 30J</span>
+            <span className="text-cascade-text-2 text-xs font-mono">{formatTokens(tokensUsed)} TOKENS</span>
           </div>
           <div className="bg-cascade-surface border border-cascade-border rounded-lg px-3 py-2 text-center">
-            <span className="text-cascade-text-2 text-xs font-mono">94% SUCCÈS</span>
+            <span className="text-cascade-text-2 text-xs font-mono">{successRate}% SUCCÈS</span>
           </div>
         </div>
 
@@ -339,7 +454,7 @@ export default function AgentDetailClient({
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
                     <div
                       className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
@@ -352,6 +467,18 @@ export default function AgentDetailClient({
                         <span className="opacity-50 animate-pulse">...</span>
                       )}
                     </div>
+                    {msg.role === 'assistant' && msg.content && (
+                      <button
+                        onClick={() => downloadMessage(msg.content)}
+                        title="Télécharger"
+                        className="flex items-center gap-1 text-cascade-muted hover:text-cascade-text-2 text-xs transition-colors px-1"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                        </svg>
+                        Télécharger
+                      </button>
+                    )}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
@@ -359,7 +486,47 @@ export default function AgentDetailClient({
 
               {/* Input */}
               <div className="px-6 py-4 border-t border-cascade-border flex-shrink-0">
+                {/* Attachment chips */}
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {attachedFiles.map((f) => (
+                      <div
+                        key={f.id}
+                        className="flex items-center gap-1.5 bg-cascade-surface border border-cascade-border rounded-full px-3 py-1 text-xs text-cascade-text-2"
+                      >
+                        <span>{f.isImage ? '🖼' : '📄'}</span>
+                        <span className="max-w-[160px] truncate">{f.name}</span>
+                        <button
+                          onClick={() => removeFile(f.id)}
+                          className="text-cascade-muted hover:text-cascade-text ml-0.5"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-3 items-end">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".txt,.md,.csv,.json,.xml,.yaml,.yml,.html,.css,.js,.ts,.png,.jpg,.jpeg,.gif,.webp,.pdf"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  {/* Paperclip button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isStreaming}
+                    title="Joindre un fichier"
+                    className="flex-shrink-0 text-cascade-muted hover:text-cascade-text-2 disabled:opacity-40 transition-colors pb-3"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
                   <textarea
                     className="flex-1 bg-cascade-surface border border-cascade-border rounded-lg px-4 py-3 text-cascade-text text-sm resize-none focus:outline-none focus:border-cascade-red placeholder:text-cascade-muted transition-colors"
                     placeholder={`Message à ${agent.name}...`}
@@ -422,12 +589,21 @@ export default function AgentDetailClient({
                             {formatDate(d.created_at)} · {d.format}
                           </p>
                         </div>
-                        <button
-                          onClick={() => navigator.clipboard.writeText(d.content)}
-                          className="flex-shrink-0 text-cascade-muted hover:text-cascade-text text-xs border border-cascade-border rounded-lg px-3 py-1 transition-colors"
-                        >
-                          Copier
-                        </button>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => navigator.clipboard.writeText(d.content)}
+                            className="text-cascade-muted hover:text-cascade-text text-xs border border-cascade-border rounded-lg px-3 py-1 transition-colors"
+                          >
+                            Copier
+                          </button>
+                          <button
+                            onClick={() => downloadMessage(d.content)}
+                            title="Télécharger"
+                            className="text-cascade-muted hover:text-cascade-text text-xs border border-cascade-border rounded-lg px-3 py-1 transition-colors"
+                          >
+                            ↓
+                          </button>
+                        </div>
                       </div>
                       <p className="text-cascade-text-2 text-sm line-clamp-3">{d.content}</p>
                     </div>

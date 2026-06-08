@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #070B09;
-  --foreground: #F0F5F2;
+  --background: #04091E;
+  --foreground: #E8EEFF;
 }
 
 @theme inline {
@@ -11,30 +11,52 @@
   --font-sans: var(--font-inter), sans-serif;
   --font-mono: var(--font-geist-mono);
 
-  /* Cascade brand colors */
-  --color-cascade-bg: #070B09;
-  --color-cascade-surface: #0D1A12;
-  --color-cascade-surface-2: #132018;
-  --color-cascade-border: #1E3028;
-  --color-cascade-red: #E8302A;
-  --color-cascade-red-hover: #D42820;
-  --color-cascade-teal: #00D4AA;
-  --color-cascade-teal-dim: #00D4AA1A;
-  --color-cascade-muted: #6B7B74;
-  --color-cascade-text: #F0F5F2;
-  --color-cascade-text-2: #A8B5AF;
+  /* ── Navy palette (arrière-plan & structure) ── */
+  --color-cascade-bg:        #04091E;   /* Navy 950 */
+  --color-cascade-surface:   #0B1220;   /* Navy 900 */
+  --color-cascade-surface-2: #0C1A38;   /* Navy 800 */
+  --color-cascade-border:    #132340;   /* Navy 700 */
+  --color-cascade-muted:     #587888;   /* Navy 300 */
+  --color-cascade-text-2:    #9FACD8;   /* Navy 200 */
+  --color-cascade-text:      #E8EEFF;   /* Navy 100 derived */
+
+  /* ── Orange palette (action & énergie) ── */
+  --color-cascade-red:       #C85440;   /* Orange 500 ★ — primary CTA */
+  --color-cascade-red-hover: #B04828;   /* Orange 600 — hover */
+
+  /* ── Orange accent (active/live states, formerly teal) ── */
+  --color-cascade-teal:      #F87C5C;   /* Orange 300 — live state */
+  --color-cascade-teal-dim:  #F87C5C1A;
+
+  /* ── Semantic ── */
+  --color-cascade-success:   #18B081;
+  --color-cascade-warning:   #F15A0B;
+  --color-cascade-error:     #CF4444;
+  --color-cascade-info:      #3B82F6;
 }
 
 body {
-  background-color: #070B09;
-  color: #F0F5F2;
+  background-color: #04091E;
+  color: #E8EEFF;
   font-family: var(--font-inter), sans-serif;
+}
+
+/* Equalizer animation for running agent indicator */
+@keyframes equalizer {
+  0%, 100% { transform: scaleY(0.3); }
+  50%       { transform: scaleY(1);   }
+}
+
+/* Shimmer sweep for progress bar while waiting */
+@keyframes shimmer {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(400%); }
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0D1A12; }
-::-webkit-scrollbar-thumb { background: #1E3028; border-radius: 3px; }
+::-webkit-scrollbar-track { background: #0B1220; }
+::-webkit-scrollbar-thumb { background: #132340; border-radius: 3px; }
 
 /* Selection */
-::selection { background: #E8302A33; }
+::selection { background: #C8544033; }

@@ -1,11 +1,17 @@
 import 'server-only'
 import { auth } from '@clerk/nextjs/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+type ImageAttachment = { name: string; dataUrl: string }
+
+type MistralContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
+type MistralMessage =
+  | { role: 'system'; content: string }
+  | { role: 'user'; content: string | MistralContentPart[] }
+  | { role: 'assistant'; content: string }
 
 export async function POST(req: Request) {
   const { userId } = await auth()
@@ -16,7 +22,12 @@ export async function POST(req: Request) {
     })
   }
 
-  let body: { conversationId: string; message: string; agentSlug: string }
+  let body: {
+    conversationId: string
+    message: string
+    agentSlug: string
+    imageAttachments?: ImageAttachment[]
+  }
   try {
     body = await req.json()
   } catch {
@@ -26,10 +37,17 @@ export async function POST(req: Request) {
     })
   }
 
-  const { conversationId, message, agentSlug } = body
+  const { conversationId, message, agentSlug, imageAttachments = [] } = body
   if (!conversationId || !message?.trim() || !agentSlug) {
     return new Response(JSON.stringify({ error: 'conversationId, message, and agentSlug are required' }), {
       status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (!process.env.MISTRAL_API_KEY) {
+    return new Response(JSON.stringify({ error: 'MISTRAL_API_KEY manquant' }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
   }
@@ -71,14 +89,28 @@ export async function POST(req: Request) {
     .order('created_at', { ascending: false })
     .limit(20)
 
-  const pastMessages = (history ?? []).reverse().map((m) => ({
+  const pastMessages: MistralMessage[] = (history ?? []).reverse().map((m) => ({
     role: m.role as 'user' | 'assistant',
     content: m.content,
   }))
 
-  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+  // Use pixtral for vision when images are attached
+  const hasImages = imageAttachments.length > 0
+  const model = hasImages ? 'pixtral-12b-2409' : 'mistral-small-latest'
+
+  const userContent: string | MistralContentPart[] = hasImages
+    ? [
+        { type: 'text', text: message },
+        ...imageAttachments.map((img) => ({
+          type: 'image_url' as const,
+          image_url: { url: img.dataUrl },
+        })),
+      ]
+    : message
+
+  const messages: MistralMessage[] = [
     ...pastMessages,
-    { role: 'user', content: message },
+    { role: 'user', content: userContent },
   ]
 
   let fullResponse = ''
@@ -88,28 +120,66 @@ export async function POST(req: Request) {
       const encoder = new TextEncoder()
 
       try {
-        const response = await anthropic.messages.stream({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4096,
-          system: agent.system_prompt,
-          messages,
+        const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 2048,
+            stream: true,
+            messages: [
+              { role: 'system', content: agent.system_prompt },
+              ...messages,
+            ],
+          }),
         })
 
-        for await (const event of response) {
-          if (
-            event.type === 'content_block_delta' &&
-            event.delta.type === 'text_delta'
-          ) {
-            const text = event.delta.text
-            fullResponse += text
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(text)}\n\n`))
+        if (!mistralRes.ok || !mistralRes.body) {
+          const errText = await mistralRes.text().catch(() => mistralRes.status.toString())
+          console.error('[chat] Mistral error:', errText)
+          controller.enqueue(encoder.encode('data: [ERROR]\n\n'))
+          controller.close()
+          return
+        }
+
+        const reader = mistralRes.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let totalTokens: number | null = null
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() ?? ''
+
+          for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed || trimmed === 'data: [DONE]') continue
+            if (!trimmed.startsWith('data: ')) continue
+
+            try {
+              const json = JSON.parse(trimmed.slice(6))
+              const text = json.choices?.[0]?.delta?.content ?? ''
+              if (text) {
+                fullResponse += text
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(text)}\n\n`))
+              }
+              if (json.usage?.total_tokens) {
+                totalTokens = json.usage.total_tokens
+              }
+            } catch {
+              // skip malformed chunk
+            }
           }
         }
 
-        const finalMessage = await response.finalMessage()
-        const tokensUsed =
-          finalMessage.usage.input_tokens + finalMessage.usage.output_tokens
-
+        // Save messages to DB
         await supabaseAdmin.from('messages').insert([
           {
             conversation_id: conversationId,
@@ -121,7 +191,7 @@ export async function POST(req: Request) {
             conversation_id: conversationId,
             role: 'assistant',
             content: fullResponse,
-            tokens_used: tokensUsed,
+            tokens_used: totalTokens,
           },
         ])
 

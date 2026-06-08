@@ -5,7 +5,7 @@ interface ConnectedAccountCardProps {
   onDisconnect: (id: string) => void
 }
 
-const PLATFORM_LABELS = { linkedin: 'LinkedIn', instagram: 'Instagram', twitter: 'X (Twitter)', tiktok: 'TikTok' }
+const PLATFORM_LABELS = { facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', twitter: 'X (Twitter)', tiktok: 'TikTok' }
 
 export function ConnectedAccountCard({ account, onDisconnect }: ConnectedAccountCardProps) {
   return (

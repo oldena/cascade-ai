@@ -9,8 +9,8 @@ const PLAN_LIMITS = {
   agency:  { profiles: 5, cascades: 100, accounts: 10 },
 } as const
 
-const PLATFORMS = ['linkedin', 'instagram', 'twitter', 'tiktok'] as const
-const PLATFORM_LABELS = { linkedin: 'LinkedIn', instagram: 'Instagram', twitter: 'X (Twitter)', tiktok: 'TikTok' }
+const PLATFORMS = ['facebook', 'instagram', 'linkedin', 'twitter', 'tiktok'] as const
+const PLATFORM_LABELS = { facebook: 'Facebook', linkedin: 'LinkedIn', instagram: 'Instagram', twitter: 'X (Twitter)', tiktok: 'TikTok' }
 
 interface Props {
   user: any
