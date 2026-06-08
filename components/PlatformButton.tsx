@@ -3,10 +3,11 @@ import { cn } from '@/lib/utils'
 import type { Platform } from '@/types'
 
 const PLATFORM_CONFIG: Record<Platform, { label: string; color: string; icon: string }> = {
-  linkedin: { label: 'LinkedIn', color: 'bg-blue-700 hover:bg-blue-800', icon: 'in' },
+  linkedin:  { label: 'LinkedIn',  color: 'bg-blue-700 hover:bg-blue-800', icon: 'in' },
   instagram: { label: 'Instagram', color: 'bg-pink-700 hover:bg-pink-800', icon: '◈' },
-  twitter:   { label: 'X', color: 'bg-zinc-700 hover:bg-zinc-800', icon: '𝕏' },
-  tiktok:    { label: 'TikTok', color: 'bg-black hover:bg-zinc-900 border border-zinc-700', icon: '♪' },
+  twitter:   { label: 'X',         color: 'bg-zinc-700 hover:bg-zinc-800', icon: '𝕏' },
+  tiktok:    { label: 'TikTok',    color: 'bg-black hover:bg-zinc-900 border border-zinc-700', icon: '♪' },
+  facebook:  { label: 'Facebook',  color: 'bg-blue-600 hover:bg-blue-700', icon: 'f' },
 }
 
 interface PlatformButtonProps {

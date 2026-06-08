@@ -9,16 +9,16 @@ interface PublishPanelProps {
   connectedAccounts: SocialAccount[]
 }
 
-const PLATFORMS: Platform[] = ['linkedin', 'instagram', 'twitter', 'tiktok']
+const PLATFORMS: Platform[] = ['linkedin', 'instagram', 'twitter', 'tiktok', 'facebook']
 
 export function PublishPanel({ outputId, connectedAccounts }: PublishPanelProps) {
   const [schedulingFor, setSchedulingFor] = useState<Platform | null>(null)
   const [publishing, setPublishing] = useState<Platform | null>(null)
   const [publishedJobs, setPublishedJobs] = useState<Record<Platform, { postUrl: string } | null>>({
-    linkedin: null, instagram: null, twitter: null, tiktok: null,
+    linkedin: null, instagram: null, twitter: null, tiktok: null, facebook: null,
   })
   const [errors, setErrors] = useState<Record<Platform, string | null>>({
-    linkedin: null, instagram: null, twitter: null, tiktok: null,
+    linkedin: null, instagram: null, twitter: null, tiktok: null, facebook: null,
   })
 
   const accountByPlatform = Object.fromEntries(
