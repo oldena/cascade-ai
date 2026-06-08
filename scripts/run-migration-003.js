@@ -18,7 +18,7 @@ const options = {
   path: '/v1/projects/tgbknlbtbzyphwhmjfcw/database/query',
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer ${SUPABASE_PERSONAL_ACCESS_TOKEN}',
+    'Authorization': `Bearer ${process.env.SUPABASE_PERSONAL_ACCESS_TOKEN}`,
     'Content-Type': 'application/json',
     'Content-Length': body.length,
   },
