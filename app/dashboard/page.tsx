@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     supabaseAdmin
       .from('agents')
       .select('*')
-      .order('sort_order', { ascending: true }),
+      .order('created_at', { ascending: true }),
     supabaseAdmin
       .from('deliverables')
       .select('id', { count: 'exact', head: true })
