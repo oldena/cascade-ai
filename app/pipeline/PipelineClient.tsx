@@ -590,11 +590,11 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
             return
           }
 
-          // Global timeout: 3 minutes max regardless of state
-          if (Date.now() - startedAt > 180_000) {
+          // Global timeout: 12 minutes max (18 agents × up to 40s each)
+          if (Date.now() - startedAt > 720_000) {
             pollingRef.current = false
             sessionStorage.removeItem('cascade-active-run')
-            setError('Pipeline timeout (3 min). Relancez le pipeline ou vérifiez les logs serveur.')
+            setError('Pipeline timeout (12 min). Relancez le pipeline ou vérifiez les logs serveur.')
             setMode('brief')
             return
           }
