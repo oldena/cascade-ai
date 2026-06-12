@@ -29,14 +29,14 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { runId: string; stepOrder: number }
+  let body: { runId: string; stepOrder: number; language?: string }
   try {
     body = await req.json()
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { runId, stepOrder } = body
+  const { runId, stepOrder, language } = body
   if (!runId || stepOrder == null) {
     return Response.json({ error: 'runId and stepOrder required' }, { status: 400 })
   }
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   const basePrompt = agent?.system_prompt ?? `You are ${step.name}, a specialist AI agent.`
   const systemPrompt = `${basePrompt}
 
-IMPORTANT: Detect the language of the user's brief and respond entirely in that same language. Do not switch languages under any circumstances.
+IMPORTANT: You MUST respond entirely in ${language ?? 'French (français)'}. Do not use any other language under any circumstances.
 
 OUTPUT REQUIREMENTS (mandatory for every response):
 - Provide detailed, advanced, professional-grade analysis (minimum 500-700 words)

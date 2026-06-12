@@ -518,6 +518,9 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Language (Feature 11)
+  const [language, setLanguage] = useState('Français')
+
   // Brief params (Feature 5)
   const [budget, setBudget] = useState<'petit' | 'moyen' | 'grand' | ''>('')
   const [platforms, setPlatforms] = useState<string[]>([])
@@ -588,14 +591,14 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // -------------------------------------------------------------------------
 
   // Shared streaming consumer — reads SSE from /api/pipeline/step and updates a single step
-  const consumeStepStream = useCallback(async (runId: string, order: number): Promise<boolean> => {
+  const consumeStepStream = useCallback(async (runId: string, order: number, lang?: string): Promise<boolean> => {
     const stepCfg = PIPELINE_STEPS[order]
     setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'running', output: '' } : s))
 
     const res = await fetch('/api/pipeline/step', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ runId, stepOrder: order }),
+      body: JSON.stringify({ runId, stepOrder: order, language: lang ?? language }),
     })
 
     if (!res.ok) {
@@ -637,7 +640,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
 
     if (streamError) throw new Error(streamError)
     return true
-  }, [])
+  }, [language])
 
   const runSteps = useCallback(async (runId: string, startOrder = 0) => {
     abortRef.current = false
@@ -647,7 +650,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       if (abortRef.current) break
       const stepCfg = PIPELINE_STEPS[order]
       try {
-        await consumeStepStream(runId, order)
+        await consumeStepStream(runId, order, language)
       } catch (err) {
         if (abortRef.current) break
         const msg = err instanceof Error ? err.message : 'Erreur inconnue'
@@ -906,6 +909,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     setBrief('')
     setAttachedFile(null)
     setUrls([''])
+    setLanguage('Français')
     setBudget('')
     setPlatforms([])
     setTone('')
@@ -1172,6 +1176,21 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                 rows={5}
                 className="w-full bg-cascade-surface-2 border border-cascade-border rounded-xl px-4 py-3 text-cascade-text placeholder:text-cascade-muted text-sm resize-none outline-none focus:border-cascade-teal/60 transition-colors"
               />
+
+              {/* Language selector (Feature 11) */}
+              <div className="flex items-center gap-2 flex-wrap border-t border-cascade-border pt-3">
+                <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Langue</span>
+                {['Français', 'English', 'Español', 'Português', 'العربية', '中文'].map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setLanguage(l)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${language === l ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal'}`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
 
               {/* Brief params (Feature 5) */}
               <div className="space-y-2.5 border-t border-cascade-border pt-3">
