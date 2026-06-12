@@ -101,11 +101,15 @@ function StepRow({
   onToggle,
   onView,
   onRegenerate,
+  onFeedback,
+  feedbackValue,
 }: {
   step: StepState
   onToggle: (slug: string) => void
   onView?: (slug: string) => void
   onRegenerate?: (slug: string) => void
+  onFeedback?: (slug: string, order: number, vote: 'up' | 'down') => void
+  feedbackValue?: 'up' | 'down'
 }) {
   const isPending = step.status === 'pending'
   const isRunning = step.status === 'running'
@@ -228,6 +232,24 @@ function StepRow({
             >
               ↺
             </button>
+          )}
+          {isDone && onFeedback && (
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => onFeedback(step.agentSlug, step.order, 'up')}
+                title="Bon résultat"
+                className={`text-sm px-1.5 py-0.5 rounded-md transition-colors ${feedbackValue === 'up' ? 'text-emerald-400 bg-emerald-400/10' : 'text-cascade-muted hover:text-emerald-400'}`}
+              >
+                👍
+              </button>
+              <button
+                onClick={() => onFeedback(step.agentSlug, step.order, 'down')}
+                title="Résultat insuffisant"
+                className={`text-sm px-1.5 py-0.5 rounded-md transition-colors ${feedbackValue === 'down' ? 'text-rose-400 bg-rose-400/10' : 'text-cascade-muted hover:text-rose-400'}`}
+              >
+                👎
+              </button>
+            </div>
           )}
           {isDone && step.output && !onView && (
             <button
@@ -496,6 +518,19 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Brief params (Feature 5)
+  const [budget, setBudget] = useState<'petit' | 'moyen' | 'grand' | ''>('')
+  const [platforms, setPlatforms] = useState<string[]>([])
+  const [tone, setTone] = useState<string>('')
+
+  // Agent feedback (Feature 8)
+  const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({})
+
+  // Share link (Feature 6)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [shareCopied, setShareCopied] = useState(false)
+  const shareTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // -------------------------------------------------------------------------
   // File import handler
   // -------------------------------------------------------------------------
@@ -516,6 +551,11 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Build final brief combining text + file + URLs
   const buildFinalBrief = useCallback((): string => {
     let result = brief
+    const params: string[] = []
+    if (budget) params.push(`Budget: ${budget}`)
+    if (platforms.length > 0) params.push(`Plateformes: ${platforms.join(', ')}`)
+    if (tone) params.push(`Ton de marque: ${tone}`)
+    if (params.length > 0) result += `\n\n---\n[Paramètres]\n${params.join('\n')}`
     const validUrls = urls.filter((u) => u.trim())
     if (validUrls.length > 0) {
       result += `\n\n---\n[URLs de référence]\n${validUrls.join('\n')}`
@@ -524,7 +564,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       result += `\n\n---\n[Fichier joint: ${attachedFile.name}]\n${attachedFile.content}`
     }
     return result
-  }, [brief, urls, attachedFile])
+  }, [brief, budget, platforms, tone, urls, attachedFile])
 
   // -------------------------------------------------------------------------
   // Step helpers
@@ -821,6 +861,41 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   }, [brief, steps])
 
   // -------------------------------------------------------------------------
+  // Submit feedback 👍/👎 on a done step (Feature 8)
+  // -------------------------------------------------------------------------
+
+  const submitFeedback = useCallback(async (slug: string, order: number, vote: 'up' | 'down') => {
+    if (!currentRunId) return
+    const next = feedback[slug] === vote ? undefined : vote
+    setFeedback((prev) => {
+      const copy = { ...prev }
+      if (next === undefined) delete copy[slug]
+      else copy[slug] = next
+      return copy
+    })
+    await fetch('/api/pipeline/feedback', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ runId: currentRunId, stepOrder: order, feedback: next ?? null }),
+    }).catch(() => { /* best-effort */ })
+  }, [currentRunId, feedback])
+
+  // -------------------------------------------------------------------------
+  // Share run by link (Feature 6)
+  // -------------------------------------------------------------------------
+
+  const shareRun = useCallback(() => {
+    if (!currentRunId) return
+    const url = `${window.location.origin}/pipeline/view/${currentRunId}`
+    setShareUrl(url)
+    void navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true)
+      if (shareTimeoutRef.current) clearTimeout(shareTimeoutRef.current)
+      shareTimeoutRef.current = setTimeout(() => setShareCopied(false), 2500)
+    }).catch(() => { /* clipboard blocked */ })
+  }, [currentRunId])
+
+  // -------------------------------------------------------------------------
   // Reset to brief mode
   // -------------------------------------------------------------------------
 
@@ -831,6 +906,11 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     setBrief('')
     setAttachedFile(null)
     setUrls([''])
+    setBudget('')
+    setPlatforms([])
+    setTone('')
+    setFeedback({})
+    setShareUrl(null)
     setSteps(initSteps())
     setError(null)
     setSseConnected(false)
@@ -1059,6 +1139,29 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               </p>
             </div>
 
+            {/* Templates (Feature 7) */}
+            <div className="space-y-2">
+              <p className="text-xs text-cascade-muted font-medium uppercase tracking-wider">Templates</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { icon: '🛍️', label: 'E-commerce', text: 'Boutique e-commerce mode / lifestyle. Lancement de nouvelle collection printemps-été. Cible : femmes 25-40 ans, budget moyen-haut. Objectif : notoriété et premières ventes via Meta et Instagram.' },
+                  { icon: '🚀', label: 'Lancement produit', text: 'Lancement d\'un nouveau produit SaaS B2B. Outil de gestion de projet IA pour PME. Cible : directeurs opérationnels et DAF. Objectif : 100 leads qualifiés dans les 30 jours.' },
+                  { icon: '👤', label: 'Personal branding', text: 'Développement de marque personnelle pour consultant freelance en transformation digitale. Spécialité : accompagnement PME vers le cloud. Cible : DG et DSI de PME 50-200 salariés.' },
+                  { icon: '📍', label: 'Business local', text: 'Restaurant gastronomique local, 30 couverts, ouvert depuis 3 ans. Chef étoilé. Cible : habitants de la ville + touristes. Objectif : augmenter les réservations en semaine et développer la clientèle corporate.' },
+                ].map((t) => (
+                  <button
+                    key={t.label}
+                    type="button"
+                    onClick={() => setBrief(t.text)}
+                    className="flex flex-col items-start gap-1 rounded-xl border border-cascade-border bg-cascade-surface-2 hover:border-cascade-teal/40 hover:bg-cascade-surface px-3 py-2.5 text-left transition-colors"
+                  >
+                    <span className="text-lg">{t.icon}</span>
+                    <span className="text-xs font-medium text-cascade-text-2">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-cascade-border bg-cascade-surface p-5 space-y-3">
 
               {/* Main textarea */}
@@ -1069,6 +1172,52 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                 rows={5}
                 className="w-full bg-cascade-surface-2 border border-cascade-border rounded-xl px-4 py-3 text-cascade-text placeholder:text-cascade-muted text-sm resize-none outline-none focus:border-cascade-teal/60 transition-colors"
               />
+
+              {/* Brief params (Feature 5) */}
+              <div className="space-y-2.5 border-t border-cascade-border pt-3">
+                {/* Budget */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Budget</span>
+                  {(['petit', 'moyen', 'grand'] as const).map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setBudget((prev) => prev === b ? '' : b)}
+                      className={`text-xs px-3 py-1 rounded-full border transition-colors capitalize ${budget === b ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal'}`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+                {/* Plateformes */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Plateformes</span>
+                  {['TikTok', 'Meta', 'Google', 'LinkedIn', 'Pinterest', 'YouTube'].map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPlatforms((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p])}
+                      className={`text-xs px-3 py-1 rounded-full border transition-colors ${platforms.includes(p) ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal'}`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                {/* Ton */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Ton</span>
+                  {['Luxe', 'Casual', 'B2B', 'Startup', 'Local'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTone((prev) => prev === t ? '' : t)}
+                      className={`text-xs px-3 py-1 rounded-full border transition-colors ${tone === t ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal'}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Toolbar: file + URL actions */}
               <div className="flex items-center gap-2 flex-wrap">
@@ -1318,19 +1467,36 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                   📄 PDF
                 </button>
                 <button
+                  onClick={shareRun}
+                  title="Partager ce rapport par lien"
+                  className="px-3 py-2 rounded-xl border border-cascade-border bg-cascade-surface hover:border-cascade-teal/40 text-cascade-text-2 hover:text-cascade-teal text-sm transition-colors"
+                >
+                  {shareCopied ? '✓ Lien copié !' : '🔗 Partager'}
+                </button>
+                <button
                   onClick={reset}
                   className="px-3 py-2 rounded-xl bg-cascade-red hover:bg-cascade-red-hover text-white text-sm font-semibold transition-colors"
                 >
                   Nouvelle campagne
                 </button>
               </div>
+              {shareUrl && (
+                <div className="w-full mt-1">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    className="w-full bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-1.5 text-xs text-cascade-text font-mono outline-none focus:border-cascade-teal/60"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3">
               {steps.map((step) => (
                 <div key={step.agentSlug}>
                   {step.divisionStart && <DivisionHeader label={step.divisionStart} />}
-                  <StepRow step={step} onToggle={toggleExpanded} onView={setViewingSlug} onRegenerate={regenerateStep} />
+                  <StepRow step={step} onToggle={toggleExpanded} onView={setViewingSlug} onRegenerate={regenerateStep} onFeedback={submitFeedback} feedbackValue={feedback[step.agentSlug]} />
                 </div>
               ))}
             </div>
