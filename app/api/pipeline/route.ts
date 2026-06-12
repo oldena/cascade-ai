@@ -1,5 +1,4 @@
 import 'server-only'
-import { after } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
@@ -148,106 +147,7 @@ export async function POST(req: Request) {
     })
   }
 
-  // ---------------------------------------------------------------------------
-  // Background pipeline — runs after response is sent via next/server after()
-  // ---------------------------------------------------------------------------
-  after(async () => {
-    try {
-      const accumulatedOutputs: Array<{ label: string; name: string; output: string }> = []
-
-      for (const step of PIPELINE_STEPS) {
-        const basePrompt =
-          agentPromptMap.get(step.slug) ?? `You are ${step.name}, a specialist AI agent.`
-        const systemPrompt = `${basePrompt}\n\nIMPORTANT: Detect the language of the user's brief and respond entirely in that same language. Do not switch languages under any circumstances.`
-
-        // Mark step running in DB (fire-and-forget — don't block pipeline)
-        void supabaseAdmin
-          .from('pipeline_steps')
-          .update({ status: 'running', updated_at: new Date().toISOString() })
-          .eq('run_id', runId)
-          .eq('step_order', step.order)
-
-        // Build context from previous steps (cap to last 2)
-        const recentOutputs = accumulatedOutputs.slice(-2)
-        let contextBlock = ''
-        if (recentOutputs.length > 0) {
-          contextBlock = "\n\n---\nPrevious agents' outputs:\n\n"
-          for (const prev of recentOutputs) {
-            const truncated = prev.output.length > 300
-              ? prev.output.slice(0, 300) + '…'
-              : prev.output
-            contextBlock += `=== ${prev.label} (${prev.name}) ===\n${truncated}\n\n`
-          }
-        }
-
-        const userMessage = `Original brief:\n${brief}${contextBlock}`
-        let fullOutput = ''
-
-        // Per-step timeout: 40s max
-        const controller = new AbortController()
-        const stepTimeout = setTimeout(() => controller.abort(), 40_000)
-
-        try {
-          const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: 'mistral-small-latest',
-              max_tokens: 512,
-              stream: false,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userMessage },
-              ],
-            }),
-            signal: controller.signal,
-          })
-
-          if (!res.ok) {
-            const errText = await res.text().catch(() => res.status.toString())
-            throw new Error(`Mistral API error ${res.status}: ${errText}`)
-          }
-
-          const json = await res.json() as { choices: Array<{ message: { content: string } }> }
-          fullOutput = json.choices?.[0]?.message?.content ?? ''
-        } finally {
-          clearTimeout(stepTimeout)
-        }
-
-        // Final write for this step
-        await supabaseAdmin
-          .from('pipeline_steps')
-          .update({
-            status: 'done',
-            output: fullOutput,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('run_id', runId)
-          .eq('step_order', step.order)
-
-        accumulatedOutputs.push({ label: step.label, name: step.name, output: fullOutput })
-      }
-
-      // Mark run done
-      await supabaseAdmin
-        .from('pipeline_runs')
-        .update({ status: 'done', updated_at: new Date().toISOString() })
-        .eq('id', runId)
-
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.error('[pipeline] error:', msg)
-      await supabaseAdmin
-        .from('pipeline_runs')
-        .update({ status: 'failed', updated_at: new Date().toISOString() })
-        .eq('id', runId)
-    }
-  })
-
-  // Return runId immediately — client polls GET /api/pipeline/[runId]
+  // Return runId — client drives each step via POST /api/pipeline/step
   return new Response(JSON.stringify({ runId }), {
     headers: { 'Content-Type': 'application/json' },
   })

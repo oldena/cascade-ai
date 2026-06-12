@@ -59,14 +59,6 @@ interface StepState {
 
 type PageMode = 'brief' | 'running' | 'done'
 
-interface SSEEvent {
-  type: 'connected' | 'step_start' | 'chunk' | 'step_done' | 'pipeline_done' | 'error'
-  slug?: string
-  text?: string
-  message?: string
-  runId?: string
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -485,6 +477,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [viewingSlug, setViewingSlug] = useState<string | null>(null)
   const [sseConnected, setSseConnected] = useState(false)
   const pollingRef = useRef<boolean>(false)
+  const abortRef = useRef<boolean>(false)
   // Rich brief: file attachment + URLs
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null)
   const [urls, setUrls] = useState<string[]>([''])
@@ -538,91 +531,71 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   }, [])
 
   // -------------------------------------------------------------------------
-  // Polling — stable callback, survives Fast Refresh re-mounts
+  // Client-driven step loop — calls /api/pipeline/step one step at a time
+  // Each call = one Mistral request (~10s max), no server-side timeout issues
   // -------------------------------------------------------------------------
 
-  const startPolling = useCallback((runId: string) => {
-    pollingRef.current = true
-    const startedAt = Date.now()
+  const runSteps = useCallback(async (runId: string, startOrder = 0) => {
+    abortRef.current = false
 
-    const poll = async () => {
-      if (!pollingRef.current) return
+    for (let order = startOrder; order < PIPELINE_STEPS.length; order++) {
+      if (abortRef.current) break
+
+      const stepCfg = PIPELINE_STEPS[order]
+
+      // Mark step running in local state
+      setSteps((prev) =>
+        prev.map((s) =>
+          s.agentSlug === stepCfg.slug ? { ...s, status: 'running' } : s
+        )
+      )
 
       try {
-        const pollRes = await fetch(`/api/pipeline/${runId}`)
-        if (pollRes.ok) {
-          const { run, steps: dbSteps } = await pollRes.json() as {
-            run: { status: string; brief: string }
-            steps: Array<{ agent_slug: string; status: string; output: string }>
-          }
+        const res = await fetch('/api/pipeline/step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ runId, stepOrder: order }),
+        })
 
-          if (run.brief) setBrief(run.brief)
-
-          setSteps((prev) =>
-            PIPELINE_STEPS.map((s, i) => {
-              const dbStep = dbSteps.find((ds) => ds.agent_slug === s.slug)
-              const prevStep = prev.find((p) => p.agentSlug === s.slug)
-              return {
-                order: i,
-                agentSlug: s.slug,
-                agentName: s.name,
-                label: s.label,
-                emoji: s.emoji,
-                divisionStart: s.divisionStart,
-                status: (dbStep?.status ?? 'pending') as StepState['status'],
-                output: dbStep?.output ?? '',
-                expanded: prevStep?.expanded ?? false,
-              }
-            })
-          )
-
-          if (run.status === 'done') {
-            pollingRef.current = false
-            sessionStorage.removeItem('cascade-active-run')
-            setMode('done')
-            return
-          }
-          if (run.status === 'failed') {
-            pollingRef.current = false
-            sessionStorage.removeItem('cascade-active-run')
-            setError('Pipeline échoué — vérifiez les logs serveur (terminal next dev).')
-            setMode('brief')
-            return
-          }
-
-          // Global timeout: 12 minutes max (18 agents × up to 40s each)
-          if (Date.now() - startedAt > 720_000) {
-            pollingRef.current = false
-            sessionStorage.removeItem('cascade-active-run')
-            setError('Pipeline timeout (12 min). Relancez le pipeline ou vérifiez les logs serveur.')
-            setMode('brief')
-            return
-          }
-
-          // Stuck detection: if all steps still pending after 45s, server IIFE failed silently
-          const anyProgress = dbSteps.some((s) => s.status !== 'pending' || (s.output?.length ?? 0) > 0)
-          if (!anyProgress && Date.now() - startedAt > 45_000) {
-            pollingRef.current = false
-            sessionStorage.removeItem('cascade-active-run')
-            setError('Pipeline bloqué — aucun agent n\'a démarré après 45s. Vérifiez les logs serveur (terminal npm run dev).')
-            setMode('brief')
-            return
-          }
+        if (!res.ok) {
+          const errText = await res.text().catch(() => 'Erreur inconnue')
+          let msg = errText
+          try { msg = JSON.parse(errText).error ?? errText } catch { /* raw */ }
+          throw new Error(msg)
         }
-      } catch {
-        // network hiccup — retry next tick
-      }
 
-      if (pollingRef.current) {
-        setTimeout(() => { void poll() }, 800)
+        const { output } = await res.json() as { output: string; isLast: boolean }
+
+        setSteps((prev) =>
+          prev.map((s) =>
+            s.agentSlug === stepCfg.slug ? { ...s, status: 'done', output } : s
+          )
+        )
+      } catch (err) {
+        if (abortRef.current) break
+        const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+        setSteps((prev) =>
+          prev.map((s) =>
+            s.agentSlug === stepCfg.slug ? { ...s, status: 'failed', output: msg } : s
+          )
+        )
+        pollingRef.current = false
+        sessionStorage.removeItem('cascade-active-run')
+        setError(`Erreur agent ${stepCfg.name}: ${msg}`)
+        setMode('brief')
+        return
       }
     }
 
-    setTimeout(() => { void poll() }, 800)
+    if (!abortRef.current) {
+      pollingRef.current = false
+      sessionStorage.removeItem('cascade-active-run')
+      setMode('done')
+    }
   }, [])
 
   // -------------------------------------------------------------------------
-  // Recover polling after Fast Refresh or page reload
+  // Recover after page reload — resume from first non-done step
   // -------------------------------------------------------------------------
 
   useEffect(() => {
@@ -632,26 +605,46 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     try { parsed = JSON.parse(saved) } catch { sessionStorage.removeItem('cascade-active-run'); return }
     if (!parsed?.runId) return
 
-    // Verify run is still active before resuming
     void (async () => {
       try {
         const res = await fetch(`/api/pipeline/${parsed!.runId}`)
         if (!res.ok) { sessionStorage.removeItem('cascade-active-run'); return }
-        const { run } = await res.json() as { run: { status: string; brief: string } }
-        if (run.status === 'done' || run.status === 'failed') {
+        const { run, steps: dbSteps } = await res.json() as {
+          run: { status: string; brief: string }
+          steps: Array<{ agent_slug: string; status: string; output: string }>
+        }
+
+        if (run.status === 'done') {
+          sessionStorage.removeItem('cascade-active-run')
+          setBrief(run.brief ?? '')
+          setSteps(PIPELINE_STEPS.map((s, i) => {
+            const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
+            return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: 'done' as StepState['status'], output: db?.output ?? '', expanded: false }
+          }))
+          setMode('done')
+          return
+        }
+        if (run.status === 'failed') {
           sessionStorage.removeItem('cascade-active-run')
           return
         }
-        // Still running — resume
+
+        // Still running — restore done steps and resume from first non-done
         setBrief(run.brief ?? '')
+        setSteps(PIPELINE_STEPS.map((s, i) => {
+          const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
+          return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: (db?.status ?? 'pending') as StepState['status'], output: db?.output ?? '', expanded: false }
+        }))
         setSseConnected(true)
         setMode('running')
-        startPolling(parsed!.runId)
+        const firstPending = dbSteps.findIndex((s) => s.status !== 'done')
+        const resumeOrder = firstPending === -1 ? 0 : firstPending
+        void runSteps(parsed!.runId, resumeOrder)
       } catch {
         sessionStorage.removeItem('cascade-active-run')
       }
     })()
-  }, [startPolling])
+  }, [runSteps])
 
   // -------------------------------------------------------------------------
   // Launch pipeline
@@ -682,10 +675,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       const { runId } = await res.json() as { runId: string }
       if (!runId) throw new Error('Pas de runId reçu du serveur')
 
-      // Persist so Fast Refresh can recover
+      // Persist so page reload can recover
       sessionStorage.setItem('cascade-active-run', JSON.stringify({ runId }))
       setSseConnected(true)
-      startPolling(runId)
+      void runSteps(runId)
 
     } catch (err) {
       pollingRef.current = false
@@ -695,7 +688,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       setMode('brief')
       setSteps(initSteps())
     }
-  }, [buildFinalBrief, startPolling])
+  }, [buildFinalBrief, runSteps])
 
   // -------------------------------------------------------------------------
   // Export all outputs to clipboard as markdown
@@ -740,6 +733,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // -------------------------------------------------------------------------
 
   const reset = useCallback(() => {
+    abortRef.current = true
     pollingRef.current = false
     sessionStorage.removeItem('cascade-active-run')
     setBrief('')
