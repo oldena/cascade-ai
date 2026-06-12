@@ -111,12 +111,13 @@ OUTPUT REQUIREMENTS (mandatory for every response):
     .eq('run_id', runId)
     .eq('step_order', stepOrder)
 
-  // Call Mistral (40s per-step timeout)
+  // Call Mistral with streaming (40s timeout)
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 40_000)
 
+  let mistralRes: Response
   try {
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -124,8 +125,8 @@ OUTPUT REQUIREMENTS (mandatory for every response):
       },
       body: JSON.stringify({
         model: 'mistral-small-latest',
-        max_tokens: 512,
-        stream: false,
+        max_tokens: 1500,
+        stream: true,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
@@ -133,43 +134,74 @@ OUTPUT REQUIREMENTS (mandatory for every response):
       }),
       signal: controller.signal,
     })
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => res.status.toString())
-      throw new Error(`Mistral ${res.status}: ${errText}`)
-    }
-
-    const json = await res.json() as { choices: Array<{ message: { content: string } }> }
-    const output = json.choices?.[0]?.message?.content ?? ''
-
-    await supabaseAdmin
-      .from('pipeline_steps')
-      .update({ status: 'done', output, updated_at: new Date().toISOString() })
-      .eq('run_id', runId)
-      .eq('step_order', stepOrder)
-
-    const isLast = stepOrder === PIPELINE_STEPS.length - 1
-    if (isLast) {
-      await supabaseAdmin
-        .from('pipeline_runs')
-        .update({ status: 'done', updated_at: new Date().toISOString() })
-        .eq('id', runId)
-    }
-
-    return Response.json({ output, isLast })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    await supabaseAdmin
-      .from('pipeline_steps')
-      .update({ status: 'failed', output: msg, updated_at: new Date().toISOString() })
-      .eq('run_id', runId)
-      .eq('step_order', stepOrder)
-    await supabaseAdmin
-      .from('pipeline_runs')
-      .update({ status: 'failed', updated_at: new Date().toISOString() })
-      .eq('id', runId)
-    return Response.json({ error: msg }, { status: 500 })
-  } finally {
     clearTimeout(timeout)
+    const msg = err instanceof Error ? err.message : String(err)
+    await supabaseAdmin.from('pipeline_steps').update({ status: 'failed', output: msg, updated_at: new Date().toISOString() }).eq('run_id', runId).eq('step_order', stepOrder)
+    await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', updated_at: new Date().toISOString() }).eq('id', runId)
+    return Response.json({ error: msg }, { status: 500 })
   }
+
+  if (!mistralRes.ok) {
+    clearTimeout(timeout)
+    const errText = await mistralRes.text().catch(() => mistralRes.status.toString())
+    const msg = `Mistral ${mistralRes.status}: ${errText}`
+    await supabaseAdmin.from('pipeline_steps').update({ status: 'failed', output: msg, updated_at: new Date().toISOString() }).eq('run_id', runId).eq('step_order', stepOrder)
+    await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', updated_at: new Date().toISOString() }).eq('id', runId)
+    return Response.json({ error: msg }, { status: 500 })
+  }
+
+  const encoder = new TextEncoder()
+  let fullOutput = ''
+
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const reader = mistralRes.body!.getReader()
+      const decoder = new TextDecoder()
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value, { stream: true })
+          for (const line of chunk.split('\n')) {
+            const trimmed = line.trim()
+            if (!trimmed.startsWith('data: ')) continue
+            const data = trimmed.slice(6)
+            if (data === '[DONE]') continue
+            try {
+              const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> }
+              const content = parsed.choices?.[0]?.delta?.content ?? ''
+              if (content) {
+                fullOutput += content
+                ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+              }
+            } catch { /* malformed SSE line */ }
+          }
+        }
+
+        await supabaseAdmin.from('pipeline_steps').update({ status: 'done', output: fullOutput, updated_at: new Date().toISOString() }).eq('run_id', runId).eq('step_order', stepOrder)
+        const isLast = stepOrder === PIPELINE_STEPS.length - 1
+        if (isLast) {
+          await supabaseAdmin.from('pipeline_runs').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', runId)
+        }
+        ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, isLast })}\n\n`))
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        await supabaseAdmin.from('pipeline_steps').update({ status: 'failed', output: msg, updated_at: new Date().toISOString() }).eq('run_id', runId).eq('step_order', stepOrder)
+        await supabaseAdmin.from('pipeline_runs').update({ status: 'failed', updated_at: new Date().toISOString() }).eq('id', runId)
+        ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`))
+      } finally {
+        clearTimeout(timeout)
+        ctrl.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    },
+  })
 }

@@ -100,10 +100,12 @@ function StepRow({
   step,
   onToggle,
   onView,
+  onRegenerate,
 }: {
   step: StepState
   onToggle: (slug: string) => void
   onView?: (slug: string) => void
+  onRegenerate?: (slug: string) => void
 }) {
   const isPending = step.status === 'pending'
   const isRunning = step.status === 'running'
@@ -216,6 +218,15 @@ function StepRow({
               className="text-xs bg-cascade-surface-2 border border-cascade-border text-cascade-text-2 hover:border-cascade-teal/40 hover:text-cascade-teal px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
             >
               Voir ↗
+            </button>
+          )}
+          {isDone && onRegenerate && (
+            <button
+              onClick={() => onRegenerate(step.agentSlug)}
+              title="Relancer cet agent"
+              className="text-xs bg-cascade-surface-2 border border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal px-2 py-0.5 rounded-md transition-colors whitespace-nowrap"
+            >
+              ↺
             </button>
           )}
           {isDone && step.output && !onView && (
@@ -476,6 +487,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [viewingSlug, setViewingSlug] = useState<string | null>(null)
   const [sseConnected, setSseConnected] = useState(false)
+  const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   const pollingRef = useRef<boolean>(false)
   const abortRef = useRef<boolean>(false)
   // Rich brief: file attachment + URLs
@@ -535,50 +547,71 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Each call = one Mistral request (~10s max), no server-side timeout issues
   // -------------------------------------------------------------------------
 
+  // Shared streaming consumer — reads SSE from /api/pipeline/step and updates a single step
+  const consumeStepStream = useCallback(async (runId: string, order: number): Promise<boolean> => {
+    const stepCfg = PIPELINE_STEPS[order]
+    setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'running', output: '' } : s))
+
+    const res = await fetch('/api/pipeline/step', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ runId, stepOrder: order }),
+    })
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Erreur inconnue')
+      let msg = errText
+      try { msg = JSON.parse(errText).error ?? errText } catch { /* raw */ }
+      throw new Error(msg)
+    }
+
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let streamError: string | null = null
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6).trim()
+        try {
+          const parsed = JSON.parse(data) as { content?: string; done?: boolean; error?: string }
+          if (parsed.error) { streamError = parsed.error; break }
+          if (parsed.content) {
+            const content = parsed.content
+            setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, output: s.output + content } : s))
+          }
+          if (parsed.done) {
+            setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'done' } : s))
+          }
+        } catch { /* malformed */ }
+      }
+      if (streamError) break
+    }
+
+    if (streamError) throw new Error(streamError)
+    return true
+  }, [])
+
   const runSteps = useCallback(async (runId: string, startOrder = 0) => {
     abortRef.current = false
+    setCurrentRunId(runId)
 
     for (let order = startOrder; order < PIPELINE_STEPS.length; order++) {
       if (abortRef.current) break
-
       const stepCfg = PIPELINE_STEPS[order]
-
-      // Mark step running in local state
-      setSteps((prev) =>
-        prev.map((s) =>
-          s.agentSlug === stepCfg.slug ? { ...s, status: 'running' } : s
-        )
-      )
-
       try {
-        const res = await fetch('/api/pipeline/step', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ runId, stepOrder: order }),
-        })
-
-        if (!res.ok) {
-          const errText = await res.text().catch(() => 'Erreur inconnue')
-          let msg = errText
-          try { msg = JSON.parse(errText).error ?? errText } catch { /* raw */ }
-          throw new Error(msg)
-        }
-
-        const { output } = await res.json() as { output: string; isLast: boolean }
-
-        setSteps((prev) =>
-          prev.map((s) =>
-            s.agentSlug === stepCfg.slug ? { ...s, status: 'done', output } : s
-          )
-        )
+        await consumeStepStream(runId, order)
       } catch (err) {
         if (abortRef.current) break
         const msg = err instanceof Error ? err.message : 'Erreur inconnue'
-        setSteps((prev) =>
-          prev.map((s) =>
-            s.agentSlug === stepCfg.slug ? { ...s, status: 'failed', output: msg } : s
-          )
-        )
+        setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'failed', output: msg } : s))
         pollingRef.current = false
         sessionStorage.removeItem('cascade-active-run')
         setError(`Erreur agent ${stepCfg.name}: ${msg}`)
@@ -592,7 +625,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       sessionStorage.removeItem('cascade-active-run')
       setMode('done')
     }
-  }, [])
+  }, [consumeStepStream])
 
   // -------------------------------------------------------------------------
   // Recover after page reload — resume from first non-done step
@@ -617,6 +650,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
         if (run.status === 'done') {
           sessionStorage.removeItem('cascade-active-run')
           setBrief(run.brief ?? '')
+          setCurrentRunId(parsed!.runId)
           setSteps(PIPELINE_STEPS.map((s, i) => {
             const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
             return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: 'done' as StepState['status'], output: db?.output ?? '', expanded: false }
@@ -726,6 +760,64 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current)
       copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000)
     }).catch(doFallback)
+  }, [brief, steps])
+
+  // -------------------------------------------------------------------------
+  // Regenerate a single agent (done mode)
+  // -------------------------------------------------------------------------
+
+  const regenerateStep = useCallback(async (slug: string) => {
+    if (!currentRunId) return
+    const order = PIPELINE_STEPS.findIndex((s) => s.slug === slug)
+    if (order === -1) return
+    const stepCfg = PIPELINE_STEPS[order]
+    try {
+      await consumeStepStream(currentRunId, order)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+      setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'failed', output: msg } : s))
+    }
+  }, [currentRunId, consumeStepStream])
+
+  // -------------------------------------------------------------------------
+  // Export PDF — opens a formatted HTML report in a new window for printing
+  // -------------------------------------------------------------------------
+
+  const exportPDF = useCallback(() => {
+    const safeText = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const rows = steps.map((step) => `
+      ${step.divisionStart ? `<div class="div-header">${safeText(step.divisionStart)}</div>` : ''}
+      <div class="agent-block">
+        <h2>${step.emoji} ${safeText(step.agentName)} <span class="label">${safeText(step.label)}</span></h2>
+        <div class="output">${safeText(step.output || '—').replace(/\n/g, '<br>')}</div>
+      </div>
+    `).join('')
+
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+      <title>Cascade AI — Rapport pipeline</title>
+      <style>
+        body{font-family:system-ui,sans-serif;max-width:860px;margin:40px auto;color:#111;line-height:1.6}
+        h1{color:#00D4AA;font-size:22px;margin-bottom:4px}
+        .meta{color:#888;font-size:12px;margin-bottom:32px}
+        h2{font-size:14px;font-weight:700;margin:0 0 6px;color:#222}
+        h2 .label{font-weight:400;color:#666;margin-left:8px;font-size:12px}
+        .agent-block{border:1px solid #e5e7eb;border-radius:10px;padding:16px 20px;margin-bottom:12px;page-break-inside:avoid}
+        .output{font-size:13px;color:#333;white-space:pre-wrap}
+        .div-header{text-align:center;font-size:10px;font-weight:700;letter-spacing:2px;color:#aaa;text-transform:uppercase;margin:20px 0 8px;border-top:1px solid #eee;padding-top:12px}
+        @media print{body{margin:20px}.agent-block{break-inside:avoid}}
+      </style>
+    </head><body>
+      <h1>🎯 Cascade AI — Rapport Pipeline</h1>
+      <div class="meta">Brief : ${safeText(brief.slice(0, 120))} · ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+      ${rows}
+    </body></html>`
+
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    setTimeout(() => win.print(), 600)
   }, [brief, steps])
 
   // -------------------------------------------------------------------------
@@ -1202,10 +1294,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                 <p className="text-cascade-text-2 text-sm line-clamp-2">{brief}</p>
               </div>
 
-              <div className="flex gap-3 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0 flex-wrap">
                 <button
                   onClick={exportAll}
-                  className="px-4 py-2 rounded-xl border border-cascade-border bg-cascade-surface hover:border-cascade-teal/40 text-sm transition-colors flex items-center gap-1.5"
+                  className="px-3 py-2 rounded-xl border border-cascade-border bg-cascade-surface hover:border-cascade-teal/40 text-sm transition-colors flex items-center gap-1.5"
                   style={{ color: copied ? 'var(--cascade-teal, #00D4AA)' : undefined }}
                 >
                   {copied ? (
@@ -1216,12 +1308,18 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                       Copié !
                     </>
                   ) : (
-                    'Exporter tout'
+                    '📋 Copier'
                   )}
                 </button>
                 <button
+                  onClick={exportPDF}
+                  className="px-3 py-2 rounded-xl border border-cascade-border bg-cascade-surface hover:border-cascade-teal/40 text-cascade-text-2 hover:text-cascade-teal text-sm transition-colors"
+                >
+                  📄 PDF
+                </button>
+                <button
                   onClick={reset}
-                  className="px-4 py-2 rounded-xl bg-cascade-red hover:bg-cascade-red-hover text-white text-sm font-semibold transition-colors"
+                  className="px-3 py-2 rounded-xl bg-cascade-red hover:bg-cascade-red-hover text-white text-sm font-semibold transition-colors"
                 >
                   Nouvelle campagne
                 </button>
@@ -1232,7 +1330,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               {steps.map((step) => (
                 <div key={step.agentSlug}>
                   {step.divisionStart && <DivisionHeader label={step.divisionStart} />}
-                  <StepRow step={step} onToggle={toggleExpanded} onView={setViewingSlug} />
+                  <StepRow step={step} onToggle={toggleExpanded} onView={setViewingSlug} onRegenerate={regenerateStep} />
                 </div>
               ))}
             </div>
