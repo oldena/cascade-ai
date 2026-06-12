@@ -66,7 +66,20 @@ export async function POST(req: Request) {
     .single()
 
   const basePrompt = agent?.system_prompt ?? `You are ${step.name}, a specialist AI agent.`
-  const systemPrompt = `${basePrompt}\n\nIMPORTANT: Detect the language of the user's brief and respond entirely in that same language. Do not switch languages under any circumstances.`
+  const systemPrompt = `${basePrompt}
+
+IMPORTANT: Detect the language of the user's brief and respond entirely in that same language. Do not switch languages under any circumstances.
+
+OUTPUT REQUIREMENTS (mandatory for every response):
+- Provide detailed, advanced, professional-grade analysis (minimum 500-700 words)
+- Always prominently feature the brand name in your headings and throughout the response
+- Include at least 2 relevant product/brand image suggestions using this exact markdown format:
+  ![Brand Product - Description](https://images.unsplash.com/photo-[relevant-query]?w=800&h=600&fit=crop)
+  Use descriptive Unsplash photo IDs that match the product/brand category
+- Structure your response with clear ## headers and bullet points
+- Be specific, actionable, and comprehensive — never generic
+- Include concrete examples, metrics, or strategies relevant to the brand
+- End with a clear "## Next Steps" section with 3-5 prioritized actions`
 
   // Fetch last 2 completed steps for context
   const { data: prevSteps } = await supabaseAdmin
