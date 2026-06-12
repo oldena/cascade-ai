@@ -38,6 +38,12 @@ export function NavBar() {
           >
             Calendrier
           </Link>
+          <Link
+            href="/analytics"
+            className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
+          >
+            Analytics
+          </Link>
         </div>
       </div>
 
