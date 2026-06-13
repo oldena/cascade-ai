@@ -673,6 +673,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Iteration instructions per agent slug (Feature 10)
   const [refineInstructions, setRefineInstructions] = useState<Record<string, string>>({})
 
+  // History filter (Sprint 1)
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'running' | 'done' | 'failed'>('all')
+  const [historySearch, setHistorySearch] = useState('')
+
   // Run rename (Sprint 1)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -694,14 +698,36 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const content = ev.target?.result as string ?? ''
-      setAttachedFile({ name: file.name, content })
-    }
-    reader.readAsText(file)
-    // Reset so same file can be re-imported
+    const isImage = file.type.startsWith('image/')
     e.target.value = ''
+
+    if (isImage) {
+      const reader = new FileReader()
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target?.result as string ?? ''
+        const base64 = dataUrl.split(',')[1] ?? ''
+        setAttachedFile({ name: file.name, content: `[Analyse en cours…]` })
+        try {
+          const res = await fetch('/api/extract-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ base64, filename: file.name, mimeType: file.type }),
+          })
+          const data = await res.json() as { description?: string; error?: string }
+          setAttachedFile({ name: file.name, content: data.description ?? `[Image: ${file.name}]` })
+        } catch {
+          setAttachedFile({ name: file.name, content: `[Image: ${file.name}]` })
+        }
+      }
+      reader.readAsDataURL(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const content = ev.target?.result as string ?? ''
+        setAttachedFile({ name: file.name, content })
+      }
+      reader.readAsText(file)
+    }
   }, [])
 
   // Build final brief combining text + file + URLs
@@ -1269,12 +1295,41 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // -------------------------------------------------------------------------
 
   function renderRunsList() {
-    if (recentRuns.length === 0) {
-      return <p className="text-xs text-cascade-muted">Aucun run pour l&apos;instant.</p>
-    }
+    const q = historySearch.toLowerCase()
+    const filteredRuns = recentRuns.filter((r) => {
+      const matchStatus = historyFilter === 'all' || r.status === historyFilter
+      const matchSearch = !q || (r.name ?? '').toLowerCase().includes(q) || r.brief.toLowerCase().includes(q)
+      return matchStatus && matchSearch
+    })
+
     return (
-      <ul className="flex flex-col gap-2">
-        {recentRuns.map((run) => (
+      <div className="flex flex-col gap-2">
+        {/* Search */}
+        <input
+          type="text"
+          value={historySearch}
+          onChange={(e) => setHistorySearch(e.target.value)}
+          placeholder="Rechercher…"
+          className="w-full text-xs bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-1.5 text-cascade-text placeholder:text-cascade-muted outline-none focus:border-cascade-teal/60 transition-colors"
+        />
+        {/* Status filter */}
+        <div className="flex gap-1 flex-wrap">
+          {(['all', 'done', 'running', 'failed'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setHistoryFilter(f)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${historyFilter === f ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40'}`}
+            >
+              {f === 'all' ? 'Tous' : f}
+            </button>
+          ))}
+        </div>
+
+        {filteredRuns.length === 0 ? (
+          <p className="text-xs text-cascade-muted">Aucun run trouvé.</p>
+        ) : (
+        <ul className="flex flex-col gap-2">
+        {filteredRuns.map((run) => (
           <li key={run.id} className="relative group">
             {renamingId === run.id ? (
               /* Inline rename input */
@@ -1353,7 +1408,9 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
             )}
           </li>
         ))}
-      </ul>
+        </ul>
+        )}
+      </div>
     )
   }
 
@@ -1490,7 +1547,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               {/* Language selector (Feature 11) */}
               <div className="flex items-center gap-2 flex-wrap border-t border-cascade-border pt-3">
                 <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Langue</span>
-                {['Français', 'English', 'Español', 'Português', 'العربية', '中文'].map((l) => (
+                {['Français', 'English', 'Español', 'Português', 'Norsk', 'Svenska', 'العربية', '中文'].map((l) => (
                   <button
                     key={l}
                     type="button"
@@ -1554,7 +1611,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt,.md,.csv,.json,.xml,.html"
+                  accept=".txt,.md,.csv,.json,.xml,.html,.jpg,.jpeg,.png,.webp,.gif"
                   className="hidden"
                   onChange={handleFileChange}
                 />
