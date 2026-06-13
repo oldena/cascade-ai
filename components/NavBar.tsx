@@ -44,6 +44,12 @@ export function NavBar() {
           >
             Analytics
           </Link>
+          <Link
+            href="/settings"
+            className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
+          >
+            Paramètres
+          </Link>
         </div>
       </div>
 
