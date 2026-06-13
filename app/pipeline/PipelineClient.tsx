@@ -676,6 +676,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Integrations (Feature 9)
   const [publishModal, setPublishModal] = useState<{ slug: string; content: string; type: 'metricool' | 'meta-ads' } | null>(null)
   const [publishStatus, setPublishStatus] = useState<Record<string, 'idle' | 'publishing' | 'done' | 'error'>>({})
+  const [publishError, setPublishError] = useState<string | null>(null)
   const [publishNetwork, setPublishNetwork] = useState<string[]>(['instagram'])
   const [publishDate, setPublishDate] = useState(() => {
     const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0)
@@ -1089,6 +1090,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     if (!publishModal) return
     const { slug, content, type } = publishModal
     setPublishStatus((prev) => ({ ...prev, [slug]: 'publishing' }))
+    setPublishError(null)
     setPublishModal(null)
     try {
       let res: Response
@@ -1108,10 +1110,13 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       if (res.ok) {
         setPublishStatus((prev) => ({ ...prev, [slug]: 'done' }))
       } else {
+        const d = await res.json().catch(() => ({})) as { error?: string }
         setPublishStatus((prev) => ({ ...prev, [slug]: 'error' }))
+        setPublishError(d.error ?? 'Erreur lors de la publication.')
       }
     } catch {
       setPublishStatus((prev) => ({ ...prev, [slug]: 'error' }))
+      setPublishError('Erreur réseau. Vérifiez votre connexion.')
     }
   }, [publishModal, publishNetwork, publishDate])
 
@@ -1773,6 +1778,22 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       {/* Live view modal — shows running agent's output full-screen */}
       {viewStep && (
         <LiveViewModal step={viewStep} onClose={() => setViewingSlug(null)} />
+      )}
+
+      {/* Publish error toast */}
+      {publishError && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-full px-4">
+          <div className="bg-cascade-surface border border-cascade-red/40 rounded-xl px-4 py-3 shadow-2xl flex items-start gap-3">
+            <span className="text-cascade-red text-lg flex-shrink-0">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-cascade-text">{publishError}</p>
+              {publishError.includes('Intégrations') && (
+                <a href="/integrations" className="text-xs text-cascade-teal hover:underline mt-1 block">→ Configurer les intégrations</a>
+              )}
+            </div>
+            <button onClick={() => setPublishError(null)} className="text-cascade-muted hover:text-cascade-text text-lg leading-none flex-shrink-0">×</button>
+          </div>
+        </div>
       )}
 
       {/* Share modal */}
