@@ -673,6 +673,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Iteration instructions per agent slug (Feature 10)
   const [refineInstructions, setRefineInstructions] = useState<Record<string, string>>({})
 
+  // Run rename (Sprint 1)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+
   // Integrations (Feature 9)
   const [publishModal, setPublishModal] = useState<{ slug: string; content: string; type: 'metricool' | 'meta-ads' } | null>(null)
   const [publishStatus, setPublishStatus] = useState<Record<string, 'idle' | 'publishing' | 'done' | 'error'>>({})
@@ -1183,6 +1187,27 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   }, [])
 
   // -------------------------------------------------------------------------
+  // Rename a past run
+  // -------------------------------------------------------------------------
+
+  const renameRun = useCallback(async (runId: string, name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) { setRenamingId(null); return }
+    try {
+      const res = await fetch(`/api/pipeline/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+      if (res.ok) {
+        setRecentRuns((prev) => prev.map((r) => r.id === runId ? { ...r, name: trimmed } : r))
+      }
+    } finally {
+      setRenamingId(null)
+    }
+  }, [])
+
+  // -------------------------------------------------------------------------
   // Load a past run (fetch real step outputs from DB)
   // -------------------------------------------------------------------------
 
@@ -1251,44 +1276,81 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       <ul className="flex flex-col gap-2">
         {recentRuns.map((run) => (
           <li key={run.id} className="relative group">
-            <button
-              onClick={() => loadRun(run)}
-              className="w-full text-left rounded-lg border border-cascade-border bg-cascade-surface-2 hover:border-cascade-teal/40 transition-colors px-3 py-2 pr-9"
-            >
-              <p className="text-xs text-cascade-text-2 truncate group-hover:text-cascade-text transition-colors">
-                {run.brief.slice(0, 60)}
-                {run.brief.length > 60 ? '…' : ''}
-              </p>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[10px] text-cascade-muted">
-                  {formatDate(run.created_at)}
-                </span>
-                <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusBadgeClass(run.status)}`}
-                >
-                  {run.status}
-                </span>
+            {renamingId === run.id ? (
+              /* Inline rename input */
+              <div className="rounded-lg border border-cascade-teal/60 bg-cascade-surface-2 px-3 py-2">
+                <input
+                  autoFocus
+                  className="w-full text-xs bg-transparent text-cascade-text outline-none"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') void renameRun(run.id, renameValue)
+                    if (e.key === 'Escape') setRenamingId(null)
+                  }}
+                  onBlur={() => void renameRun(run.id, renameValue)}
+                  placeholder="Nom du run…"
+                />
+                <p className="text-[10px] text-cascade-muted mt-0.5">Entrée pour valider · Échap pour annuler</p>
               </div>
-            </button>
+            ) : (
+              <button
+                onClick={() => loadRun(run)}
+                className="w-full text-left rounded-lg border border-cascade-border bg-cascade-surface-2 hover:border-cascade-teal/40 transition-colors px-3 py-2 pr-14"
+              >
+                {run.name ? (
+                  <p className="text-xs font-medium text-cascade-text truncate">{run.name}</p>
+                ) : null}
+                <p className={`text-xs truncate transition-colors ${run.name ? 'text-cascade-muted' : 'text-cascade-text-2 group-hover:text-cascade-text'}`}>
+                  {run.brief.slice(0, 60)}
+                  {run.brief.length > 60 ? '…' : ''}
+                </p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] text-cascade-muted">
+                    {formatDate(run.created_at)}
+                  </span>
+                  <span
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusBadgeClass(run.status)}`}
+                  >
+                    {run.status}
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* Rename button */}
+            {renamingId !== run.id && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setRenameValue(run.name ?? ''); setRenamingId(run.id) }}
+                title="Renommer ce run"
+                className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-cascade-surface text-cascade-muted hover:text-cascade-teal"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 012.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414a2 2 0 01.586-1.414z" />
+                </svg>
+              </button>
+            )}
 
             {/* Delete button — visible on hover */}
-            <button
-              onClick={(e) => deleteRun(run.id, e)}
-              disabled={deletingId === run.id}
-              title="Supprimer ce run"
-              className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-cascade-red/20 text-cascade-muted hover:text-cascade-red disabled:opacity-50"
-            >
-              {deletingId === run.id ? (
-                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              )}
-            </button>
+            {renamingId !== run.id && (
+              <button
+                onClick={(e) => deleteRun(run.id, e)}
+                disabled={deletingId === run.id}
+                title="Supprimer ce run"
+                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-cascade-red/20 text-cascade-muted hover:text-cascade-red disabled:opacity-50"
+              >
+                {deletingId === run.id ? (
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                )}
+              </button>
+            )}
           </li>
         ))}
       </ul>

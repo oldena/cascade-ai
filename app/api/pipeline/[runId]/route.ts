@@ -32,6 +32,46 @@ export async function DELETE(
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers: JSON_HEADERS })
 }
 
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ runId: string }> }
+) {
+  const { userId } = await auth()
+  if (!userId) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: JSON_HEADERS })
+  }
+
+  const { runId } = await params
+  const body = await req.json()
+  const name: string | undefined = body?.name
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return new Response(JSON.stringify({ error: 'name is required' }), { status: 400, headers: JSON_HEADERS })
+  }
+
+  const { data: run } = await supabaseAdmin
+    .from('pipeline_runs')
+    .select('id')
+    .eq('id', runId)
+    .eq('user_id', userId)
+    .single()
+
+  if (!run) {
+    return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: JSON_HEADERS })
+  }
+
+  const { error } = await supabaseAdmin
+    .from('pipeline_runs')
+    .update({ name: name.trim() })
+    .eq('id', runId)
+
+  if (error) {
+    return new Response(JSON.stringify({ error: 'Failed to update run name' }), { status: 500, headers: JSON_HEADERS })
+  }
+
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: JSON_HEADERS })
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ runId: string }> }

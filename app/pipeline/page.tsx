@@ -11,6 +11,7 @@ export interface PipelineRun {
   status: 'running' | 'done' | 'failed'
   outputs: Record<string, string>
   created_at: string
+  name?: string
 }
 
 export default async function PipelinePage() {
