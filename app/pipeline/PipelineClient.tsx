@@ -55,6 +55,8 @@ interface StepState {
   status: 'pending' | 'running' | 'done' | 'failed'
   output: string
   expanded: boolean
+  refinement: string
+  refineStatus: 'idle' | 'running' | 'done'
 }
 
 type PageMode = 'brief' | 'running' | 'done'
@@ -74,6 +76,8 @@ function initSteps(): StepState[] {
     status: 'pending',
     output: '',
     expanded: false,
+    refinement: '',
+    refineStatus: 'idle',
   }))
 }
 
@@ -103,6 +107,13 @@ function StepRow({
   onRegenerate,
   onFeedback,
   feedbackValue,
+  onRefineChange,
+  refineInstruction = '',
+  onRefine,
+  refinement = '',
+  refineStatus = 'idle',
+  onPublish,
+  publishStatus = 'idle',
 }: {
   step: StepState
   onToggle: (slug: string) => void
@@ -110,6 +121,13 @@ function StepRow({
   onRegenerate?: (slug: string) => void
   onFeedback?: (slug: string, order: number, vote: 'up' | 'down') => void
   feedbackValue?: 'up' | 'down'
+  onRefineChange?: (slug: string, value: string) => void
+  refineInstruction?: string
+  onRefine?: (slug: string, order: number) => void
+  refinement?: string
+  refineStatus?: 'idle' | 'running' | 'done'
+  onPublish?: (slug: string, content: string, type: 'metricool' | 'meta-ads') => void
+  publishStatus?: 'idle' | 'publishing' | 'done' | 'error'
 }) {
   const isPending = step.status === 'pending'
   const isRunning = step.status === 'running'
@@ -296,6 +314,49 @@ function StepRow({
         </div>
       )}
 
+      {/* Publish buttons (done, always visible for relevant agents) */}
+      {isDone && onPublish && step.output && (() => {
+        const isMetricool = ['social-strategist', 'lea', 'ugc-creator'].includes(step.agentSlug)
+        const isMetaAds = step.agentSlug === 'ads-manager'
+        if (!isMetricool && !isMetaAds) return null
+        return (
+          <div className="px-4 pb-3 flex items-center gap-2 flex-wrap">
+            {isMetricool && (
+              <button
+                onClick={() => onPublish(step.agentSlug, step.output, 'metricool')}
+                disabled={publishStatus === 'publishing'}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                  publishStatus === 'done'
+                    ? 'border-emerald-500/40 text-emerald-400 bg-emerald-400/10'
+                    : publishStatus === 'error'
+                    ? 'border-cascade-red/40 text-cascade-red bg-cascade-red/10'
+                    : 'border-cascade-border text-cascade-text-2 hover:border-cascade-teal/40 hover:text-cascade-teal bg-cascade-surface-2'
+                }`}
+              >
+                <span>📅</span>
+                {publishStatus === 'publishing' ? 'Publication…' : publishStatus === 'done' ? 'Publié ✓' : publishStatus === 'error' ? 'Erreur' : 'Publier sur Metricool'}
+              </button>
+            )}
+            {isMetaAds && (
+              <button
+                onClick={() => onPublish(step.agentSlug, step.output, 'meta-ads')}
+                disabled={publishStatus === 'publishing'}
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                  publishStatus === 'done'
+                    ? 'border-emerald-500/40 text-emerald-400 bg-emerald-400/10'
+                    : publishStatus === 'error'
+                    ? 'border-cascade-red/40 text-cascade-red bg-cascade-red/10'
+                    : 'border-cascade-border text-cascade-text-2 hover:border-blue-400/40 hover:text-blue-400 bg-cascade-surface-2'
+                }`}
+              >
+                <span>📢</span>
+                {publishStatus === 'publishing' ? 'Création…' : publishStatus === 'done' ? 'Campagne créée ✓' : publishStatus === 'error' ? 'Erreur' : 'Lancer sur Meta Ads'}
+              </button>
+            )}
+          </div>
+        )
+      })()}
+
       {/* Collapsed preview (done, not expanded) */}
       {isDone && !step.expanded && step.output && (
         <div className="px-4 pb-3">
@@ -314,6 +375,81 @@ function StepRow({
               {step.output}
             </p>
           </div>
+
+          {/* Publish actions */}
+          {onPublish && step.output && (() => {
+            const isMetricool = ['social-strategist', 'lea', 'ugc-creator'].includes(step.agentSlug)
+            const isMetaAds = step.agentSlug === 'ads-manager'
+            if (!isMetricool && !isMetaAds) return null
+            return (
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                {isMetricool && (
+                  <button
+                    onClick={() => onPublish(step.agentSlug, step.output, 'metricool')}
+                    disabled={publishStatus === 'publishing'}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                      publishStatus === 'done'
+                        ? 'border-emerald-500/40 text-emerald-400 bg-emerald-400/10'
+                        : publishStatus === 'error'
+                        ? 'border-cascade-red/40 text-cascade-red bg-cascade-red/10'
+                        : 'border-cascade-border text-cascade-text-2 hover:border-cascade-teal/40 hover:text-cascade-teal bg-cascade-surface-2'
+                    }`}
+                  >
+                    <span>📅</span>
+                    {publishStatus === 'publishing' ? 'Publication…' : publishStatus === 'done' ? 'Publié ✓' : publishStatus === 'error' ? 'Erreur' : 'Publier sur Metricool'}
+                  </button>
+                )}
+                {isMetaAds && (
+                  <button
+                    onClick={() => onPublish(step.agentSlug, step.output, 'meta-ads')}
+                    disabled={publishStatus === 'publishing'}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+                      publishStatus === 'done'
+                        ? 'border-emerald-500/40 text-emerald-400 bg-emerald-400/10'
+                        : publishStatus === 'error'
+                        ? 'border-cascade-red/40 text-cascade-red bg-cascade-red/10'
+                        : 'border-cascade-border text-cascade-text-2 hover:border-blue-400/40 hover:text-blue-400 bg-cascade-surface-2'
+                    }`}
+                  >
+                    <span>📢</span>
+                    {publishStatus === 'publishing' ? 'Création…' : publishStatus === 'done' ? 'Campagne créée ✓' : publishStatus === 'error' ? 'Erreur' : 'Lancer sur Meta Ads'}
+                  </button>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Refinement section */}
+          {onRefine && (
+            <div className="mt-4 border-t border-cascade-border pt-4 space-y-3">
+              <p className="text-xs text-cascade-muted uppercase tracking-widest font-semibold">Mode Itération</p>
+              <textarea
+                value={refineInstruction}
+                onChange={(e) => onRefineChange?.(step.agentSlug, e.target.value)}
+                placeholder={`Donnez une instruction à ${step.agentName}… ex: "Rends ça plus agressif"`}
+                rows={2}
+                className="w-full text-sm bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-2 text-cascade-text placeholder:text-cascade-muted resize-none focus:outline-none focus:border-cascade-teal/50 transition-colors"
+              />
+              <button
+                onClick={() => onRefine(step.agentSlug, step.order)}
+                disabled={!refineInstruction.trim() || refineStatus === 'running'}
+                className="text-xs bg-cascade-teal/10 border border-cascade-teal/30 text-cascade-teal hover:bg-cascade-teal/20 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors"
+              >
+                {refineStatus === 'running' ? 'Génération…' : '✦ Affiner'}
+              </button>
+              {(refinement || refineStatus === 'running') && (
+                <div className="rounded-lg border border-cascade-teal/20 bg-cascade-teal/5 px-4 py-3">
+                  <p className="text-[10px] text-cascade-teal/70 uppercase tracking-widest mb-2 font-semibold">Version affinée</p>
+                  <p className="text-sm text-cascade-text whitespace-pre-wrap leading-relaxed">
+                    {refinement}
+                    {refineStatus === 'running' && (
+                      <span className="inline-block w-2 h-4 bg-cascade-teal ml-0.5 animate-pulse align-middle rounded-sm" />
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -534,6 +670,18 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [shareCopied, setShareCopied] = useState(false)
   const shareTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Iteration instructions per agent slug (Feature 10)
+  const [refineInstructions, setRefineInstructions] = useState<Record<string, string>>({})
+
+  // Integrations (Feature 9)
+  const [publishModal, setPublishModal] = useState<{ slug: string; content: string; type: 'metricool' | 'meta-ads' } | null>(null)
+  const [publishStatus, setPublishStatus] = useState<Record<string, 'idle' | 'publishing' | 'done' | 'error'>>({})
+  const [publishNetwork, setPublishNetwork] = useState<string[]>(['instagram'])
+  const [publishDate, setPublishDate] = useState(() => {
+    const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0)
+    return d.toISOString().slice(0, 16)
+  })
+
   // -------------------------------------------------------------------------
   // File import handler
   // -------------------------------------------------------------------------
@@ -696,7 +844,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
           setCurrentRunId(parsed!.runId)
           setSteps(PIPELINE_STEPS.map((s, i) => {
             const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
-            return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: 'done' as StepState['status'], output: db?.output ?? '', expanded: false }
+            return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: 'done' as StepState['status'], output: db?.output ?? '', expanded: false, refinement: '', refineStatus: 'idle' as StepState['refineStatus'] }
           }))
           setMode('done')
           return
@@ -710,7 +858,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
         setBrief(run.brief ?? '')
         setSteps(PIPELINE_STEPS.map((s, i) => {
           const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
-          return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: (db?.status ?? 'pending') as StepState['status'], output: db?.output ?? '', expanded: false }
+          return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: (db?.status ?? 'pending') as StepState['status'], output: db?.output ?? '', expanded: false, refinement: '', refineStatus: 'idle' as StepState['refineStatus'] }
         }))
         setSseConnected(true)
         setMode('running')
@@ -864,6 +1012,52 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   }, [brief, steps])
 
   // -------------------------------------------------------------------------
+  // Iterate on a single agent — refine output below original (Feature 10)
+  // -------------------------------------------------------------------------
+
+  const refineStep = useCallback(async (slug: string, order: number) => {
+    const instruction = refineInstructions[slug]?.trim()
+    if (!instruction || !currentRunId) return
+    setSteps((prev) => prev.map((s) => s.agentSlug === slug ? { ...s, refineStatus: 'running', refinement: '' } : s))
+
+    try {
+      const res = await fetch('/api/pipeline/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId: currentRunId, agentSlug: slug, stepOrder: order, instruction, language }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const parsed = JSON.parse(line.slice(6).trim()) as { content?: string; done?: boolean; error?: string }
+            if (parsed.content) {
+              setSteps((prev) => prev.map((s) => s.agentSlug === slug ? { ...s, refinement: s.refinement + parsed.content! } : s))
+            }
+            if (parsed.done) {
+              setSteps((prev) => prev.map((s) => s.agentSlug === slug ? { ...s, refineStatus: 'done' } : s))
+            }
+          } catch { /* malformed */ }
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue'
+      setSteps((prev) => prev.map((s) => s.agentSlug === slug ? { ...s, refineStatus: 'idle', refinement: `Erreur: ${msg}` } : s))
+    }
+  }, [currentRunId, refineInstructions, language])
+
+  // -------------------------------------------------------------------------
   // Submit feedback 👍/👎 on a done step (Feature 8)
   // -------------------------------------------------------------------------
 
@@ -884,6 +1078,44 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   }, [currentRunId, feedback])
 
   // -------------------------------------------------------------------------
+  // Publish to Metricool / Meta Ads (Feature 9)
+  // -------------------------------------------------------------------------
+
+  const openPublishModal = useCallback((slug: string, content: string, type: 'metricool' | 'meta-ads') => {
+    setPublishModal({ slug, content, type })
+  }, [])
+
+  const submitPublish = useCallback(async () => {
+    if (!publishModal) return
+    const { slug, content, type } = publishModal
+    setPublishStatus((prev) => ({ ...prev, [slug]: 'publishing' }))
+    setPublishModal(null)
+    try {
+      let res: Response
+      if (type === 'metricool') {
+        res = await fetch('/api/integrations/metricool', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, networks: publishNetwork, scheduledAt: new Date(publishDate).toISOString() }),
+        })
+      } else {
+        res = await fetch('/api/integrations/meta-ads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ campaignName: content.slice(0, 80) }),
+        })
+      }
+      if (res.ok) {
+        setPublishStatus((prev) => ({ ...prev, [slug]: 'done' }))
+      } else {
+        setPublishStatus((prev) => ({ ...prev, [slug]: 'error' }))
+      }
+    } catch {
+      setPublishStatus((prev) => ({ ...prev, [slug]: 'error' }))
+    }
+  }, [publishModal, publishNetwork, publishDate])
+
+  // -------------------------------------------------------------------------
   // Share run by link (Feature 6)
   // -------------------------------------------------------------------------
 
@@ -891,12 +1123,19 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     if (!currentRunId) return
     const url = `${window.location.origin}/pipeline/view/${currentRunId}`
     setShareUrl(url)
-    void navigator.clipboard.writeText(url).then(() => {
+  }, [currentRunId])
+
+  const copyShareUrl = useCallback(() => {
+    if (!shareUrl) return
+    void navigator.clipboard.writeText(shareUrl).then(() => {
       setShareCopied(true)
       if (shareTimeoutRef.current) clearTimeout(shareTimeoutRef.current)
       shareTimeoutRef.current = setTimeout(() => setShareCopied(false), 2500)
-    }).catch(() => { /* clipboard blocked */ })
-  }, [currentRunId])
+    }).catch(() => {
+      const el = document.getElementById('share-url-input') as HTMLInputElement | null
+      el?.select()
+    })
+  }, [shareUrl])
 
   // -------------------------------------------------------------------------
   // Reset to brief mode
@@ -966,6 +1205,8 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               status: (dbStep?.status ?? 'pending') as StepState['status'],
               output: dbStep?.output ?? '',
               expanded: false,
+              refinement: '',
+              refineStatus: 'idle',
             }
           })
         )
@@ -987,6 +1228,8 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
         status: 'pending' as StepState['status'],
         output: '',
         expanded: false,
+        refinement: '',
+        refineStatus: 'idle' as StepState['refineStatus'],
       }))
     )
   }, [])
@@ -1499,23 +1742,27 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                   Nouvelle campagne
                 </button>
               </div>
-              {shareUrl && (
-                <div className="w-full mt-1">
-                  <input
-                    readOnly
-                    value={shareUrl}
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                    className="w-full bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-1.5 text-xs text-cascade-text font-mono outline-none focus:border-cascade-teal/60"
-                  />
-                </div>
-              )}
             </div>
 
             <div className="flex flex-col gap-3">
               {steps.map((step) => (
                 <div key={step.agentSlug}>
                   {step.divisionStart && <DivisionHeader label={step.divisionStart} />}
-                  <StepRow step={step} onToggle={toggleExpanded} onView={setViewingSlug} onRegenerate={regenerateStep} onFeedback={submitFeedback} feedbackValue={feedback[step.agentSlug]} />
+                  <StepRow
+                    step={step}
+                    onToggle={toggleExpanded}
+                    onView={setViewingSlug}
+                    onRegenerate={regenerateStep}
+                    onFeedback={submitFeedback}
+                    feedbackValue={feedback[step.agentSlug]}
+                    onRefineChange={(slug, val) => setRefineInstructions(prev => ({ ...prev, [slug]: val }))}
+                    refineInstruction={refineInstructions[step.agentSlug] ?? ''}
+                    onRefine={refineStep}
+                    refinement={step.refinement}
+                    refineStatus={step.refineStatus}
+                    onPublish={openPublishModal}
+                    publishStatus={publishStatus[step.agentSlug] ?? 'idle'}
+                  />
                 </div>
               ))}
             </div>
@@ -1526,6 +1773,99 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       {/* Live view modal — shows running agent's output full-screen */}
       {viewStep && (
         <LiveViewModal step={viewStep} onClose={() => setViewingSlug(null)} />
+      )}
+
+      {/* Share modal */}
+      {shareUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" onClick={() => setShareUrl(null)}>
+          <div className="w-full max-w-lg rounded-2xl border border-cascade-border bg-cascade-surface p-6 space-y-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-cascade-text">🔗 Partager ce rapport</h2>
+              <button onClick={() => setShareUrl(null)} className="text-cascade-muted hover:text-cascade-text text-xl leading-none">×</button>
+            </div>
+            <p className="text-xs text-cascade-muted">Partagez ce lien — accessible sans connexion.</p>
+            <div className="flex gap-2">
+              <input
+                id="share-url-input"
+                readOnly
+                value={shareUrl}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+                className="flex-1 bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-2 text-xs text-cascade-text font-mono outline-none focus:border-cascade-teal/60 select-all"
+              />
+              <button
+                onClick={copyShareUrl}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${shareCopied ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-cascade-teal text-white hover:opacity-90'}`}
+              >
+                {shareCopied ? '✓ Copié !' : 'Copier'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish modal (Feature 9) */}
+      {publishModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-2xl border border-cascade-border bg-cascade-surface p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-cascade-text">
+                {publishModal.type === 'metricool' ? '📅 Publier sur Metricool' : '📢 Lancer sur Meta Ads'}
+              </h2>
+              <button onClick={() => setPublishModal(null)} className="text-cascade-muted hover:text-cascade-text text-lg leading-none">×</button>
+            </div>
+
+            {publishModal.type === 'metricool' && (
+              <>
+                <div>
+                  <p className="text-xs text-cascade-muted mb-2 uppercase tracking-widest">Réseaux</p>
+                  <div className="flex flex-wrap gap-2">
+                    {['instagram','facebook','twitter','linkedin','tiktok','pinterest'].map((net) => (
+                      <button
+                        key={net}
+                        onClick={() => setPublishNetwork((prev) =>
+                          prev.includes(net) ? prev.filter((n) => n !== net) : [...prev, net]
+                        )}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors capitalize ${
+                          publishNetwork.includes(net)
+                            ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10'
+                            : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40'
+                        }`}
+                      >
+                        {net}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-cascade-muted mb-2 uppercase tracking-widest">Date de publication</p>
+                  <input
+                    type="datetime-local"
+                    value={publishDate}
+                    onChange={(e) => setPublishDate(e.target.value)}
+                    className="w-full text-sm bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-2 text-cascade-text focus:outline-none focus:border-cascade-teal/50"
+                  />
+                </div>
+              </>
+            )}
+
+            {publishModal.type === 'meta-ads' && (
+              <p className="text-xs text-cascade-text-2">
+                Une campagne Meta Ads sera créée en statut <span className="text-cascade-teal font-mono">PAUSED</span> avec le nom de la marque extrait du brief. Vous l&apos;activez manuellement dans Ads Manager.
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end pt-2">
+              <button onClick={() => setPublishModal(null)} className="text-xs text-cascade-muted hover:text-cascade-text px-3 py-1.5">Annuler</button>
+              <button
+                onClick={submitPublish}
+                disabled={publishModal.type === 'metricool' && publishNetwork.length === 0}
+                className="text-xs bg-cascade-teal text-cascade-bg font-semibold px-4 py-1.5 rounded-lg hover:bg-cascade-teal/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {publishModal.type === 'metricool' ? 'Planifier' : 'Créer la campagne'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
