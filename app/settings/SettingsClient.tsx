@@ -105,6 +105,18 @@ export function SettingsClient({ user, accounts: initialAccounts }: Props) {
           )}
         </div>
       </div>
+
+      {/* Integrations */}
+      <div className="bg-cascade-card border border-cascade-border rounded-xl p-6">
+        <h2 className="text-white font-semibold mb-1">Intégrations</h2>
+        <p className="text-cascade-muted text-sm mb-4">Connectez Metricool et Meta Ads pour publier directement depuis le pipeline.</p>
+        <a
+          href="/integrations"
+          className="inline-flex items-center gap-2 px-4 py-2 border border-cascade-border rounded-lg text-cascade-muted hover:text-white hover:border-cascade-red transition-colors text-sm"
+        >
+          ⚙️ Configurer les intégrations
+        </a>
+      </div>
     </div>
   )
 }
