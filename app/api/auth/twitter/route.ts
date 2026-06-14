@@ -2,6 +2,7 @@ import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createOAuthState } from '@/lib/oauth-helpers'
+import { getOAuthCreds } from '@/lib/oauth-credentials'
 import { randomBytes, createHash } from 'crypto'
 
 export async function GET() {
