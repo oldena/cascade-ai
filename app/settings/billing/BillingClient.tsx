@@ -82,7 +82,7 @@ export function BillingClient({
               {plan.charAt(0).toUpperCase() + plan.slice(1)}
             </span>
             <span className="text-cascade-muted text-sm">
-              €{plan === 'agency' ? '149' : '79'}/mo
+              €{plan === 'agency' ? '79' : '29'}/mo
             </span>
           </div>
 
@@ -141,8 +141,8 @@ export function BillingClient({
           <div className="text-center text-white">10</div>
 
           <div className="text-cascade-muted">Price</div>
+          <div className="text-center text-white">€29/mo</div>
           <div className="text-center text-white">€79/mo</div>
-          <div className="text-center text-white">€149/mo</div>
         </div>
       </div>
 

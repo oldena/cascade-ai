@@ -38,10 +38,12 @@ export async function POST(req: Request) {
   if (evt.type === 'user.created') {
     const { id, email_addresses } = evt.data
     const email = email_addresses[0]?.email_address ?? ''
+    const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     const { error } = await supabaseAdmin.from('users').insert({
       id,
       email,
       plan: 'starter',
+      trial_ends_at: trialEndsAt,
     })
     if (error) return new Response('DB insert failed', { status: 500 })
   }
