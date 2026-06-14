@@ -639,6 +639,14 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Iteration instructions per agent slug (Feature 10)
   const [refineInstructions, setRefineInstructions] = useState<Record<string, string>>({})
 
+  // Custom agents
+  type CustomAgent = { id: string; slug: string; name: string; specialty: string; system_prompt: string; avatar_emoji: string }
+  const [customAgents, setCustomAgents] = useState<CustomAgent[]>([])
+  const [showAgentModal, setShowAgentModal] = useState(false)
+  const [agentForm, setAgentForm] = useState({ name: '', specialty: '', system_prompt: '', avatar_emoji: '🤖' })
+  const [agentSaving, setAgentSaving] = useState(false)
+  const [agentError, setAgentError] = useState<string | null>(null)
+
   // History filter (Sprint 1)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'running' | 'done' | 'failed'>('all')
   const [historySearch, setHistorySearch] = useState('')
@@ -818,6 +826,14 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Recover after page reload — resume from first non-done step
   // -------------------------------------------------------------------------
 
+  // Load custom agents on mount
+  useEffect(() => {
+    fetch('/api/agents/custom')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.agents) setCustomAgents(d.agents) })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => {
     const saved = sessionStorage.getItem('cascade-active-run')
     if (!saved) return
@@ -957,6 +973,31 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // -------------------------------------------------------------------------
   // Regenerate a single agent (done mode)
   // -------------------------------------------------------------------------
+
+  const saveCustomAgent = useCallback(async () => {
+    setAgentSaving(true)
+    setAgentError(null)
+    try {
+      const res = await fetch('/api/agents/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(agentForm),
+      })
+      const data = await res.json()
+      if (!res.ok) { setAgentError(data.error ?? 'Erreur'); setAgentSaving(false); return }
+      setCustomAgents((prev) => [data.agent, ...prev])
+      setAgentForm({ name: '', specialty: '', system_prompt: '', avatar_emoji: '🤖' })
+      setShowAgentModal(false)
+    } catch {
+      setAgentError('Erreur réseau')
+    }
+    setAgentSaving(false)
+  }, [agentForm])
+
+  const deleteCustomAgent = useCallback(async (id: string) => {
+    await fetch(`/api/agents/custom?id=${id}`, { method: 'DELETE' })
+    setCustomAgents((prev) => prev.filter((a) => a.id !== id))
+  }, [])
 
   const regenerateStep = useCallback(async (slug: string) => {
     if (!currentRunId) return
@@ -1489,16 +1530,11 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               </div>
             </div>
 
-            {/* Templates (Feature 7) */}
+            {/* Templates — filtered by selected pipeline */}
             <div className="space-y-2">
               <p className="text-xs text-cascade-muted font-medium uppercase tracking-wider">Templates</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { icon: '🛍️', label: 'E-commerce', text: 'Boutique e-commerce mode / lifestyle. Lancement de nouvelle collection printemps-été. Cible : femmes 25-40 ans, budget moyen-haut. Objectif : notoriété et premières ventes via Meta et Instagram.' },
-                  { icon: '🚀', label: 'Lancement produit', text: 'Lancement d\'un nouveau produit SaaS B2B. Outil de gestion de projet IA pour PME. Cible : directeurs opérationnels et DAF. Objectif : 100 leads qualifiés dans les 30 jours.' },
-                  { icon: '👤', label: 'Personal branding', text: 'Développement de marque personnelle pour consultant freelance en transformation digitale. Spécialité : accompagnement PME vers le cloud. Cible : DG et DSI de PME 50-200 salariés.' },
-                  { icon: '📍', label: 'Business local', text: 'Restaurant gastronomique local, 30 couverts, ouvert depuis 3 ans. Chef étoilé. Cible : habitants de la ville + touristes. Objectif : augmenter les réservations en semaine et développer la clientèle corporate.' },
-                ].map((t) => (
+                {(PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).templates.map((t) => (
                   <button
                     key={t.label}
                     type="button"
@@ -1510,6 +1546,41 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Mes Agents personnalisés */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-cascade-muted font-medium uppercase tracking-wider">Mes Agents</p>
+                <button
+                  type="button"
+                  onClick={() => setShowAgentModal(true)}
+                  className="text-xs text-cascade-teal hover:underline flex items-center gap-1"
+                >
+                  + Créer un agent
+                </button>
+              </div>
+              {customAgents.length === 0 ? (
+                <p className="text-xs text-cascade-muted italic">Aucun agent personnalisé — créez le vôtre !</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {customAgents.map((a) => (
+                    <div key={a.id} className="flex items-center gap-2 rounded-xl border border-cascade-border bg-cascade-surface-2 px-3 py-2">
+                      <span className="text-base">{a.avatar_emoji}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-cascade-text-2 truncate">{a.name}</p>
+                        <p className="text-[10px] text-cascade-muted truncate max-w-[140px]">{a.specialty}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteCustomAgent(a.id)}
+                        className="ml-1 text-cascade-muted hover:text-cascade-red text-xs"
+                        title="Supprimer"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl border border-cascade-border bg-cascade-surface p-5 space-y-3">
@@ -1974,6 +2045,76 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                 {publishModal.type === 'metricool' ? 'Planifier' : 'Créer la campagne'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* CUSTOM AGENT MODAL                                                */}
+      {/* ---------------------------------------------------------------- */}
+      {showAgentModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowAgentModal(false)}
+        >
+          <div
+            className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 w-full max-w-lg space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-cascade-text">Créer un agent personnalisé</h3>
+              <button
+                type="button"
+                onClick={() => setShowAgentModal(false)}
+                className="text-cascade-muted hover:text-cascade-text transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {agentError && (
+              <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2">{agentError}</p>
+            )}
+
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  value={agentForm.avatar_emoji}
+                  onChange={(e) => setAgentForm((f) => ({ ...f, avatar_emoji: e.target.value }))}
+                  placeholder="🤖"
+                  maxLength={2}
+                  className="w-14 text-center text-xl bg-cascade-surface-2 border border-cascade-border rounded-xl px-2 py-2 outline-none focus:border-cascade-teal/60 transition-colors"
+                />
+                <input
+                  value={agentForm.name}
+                  onChange={(e) => setAgentForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Nom de l'agent"
+                  className="flex-1 bg-cascade-surface-2 border border-cascade-border rounded-xl px-3 py-2 text-sm text-cascade-text placeholder:text-cascade-muted outline-none focus:border-cascade-teal/60 transition-colors"
+                />
+              </div>
+              <input
+                value={agentForm.specialty}
+                onChange={(e) => setAgentForm((f) => ({ ...f, specialty: e.target.value }))}
+                placeholder="Spécialité (ex: Expert en copywriting B2B)"
+                className="w-full bg-cascade-surface-2 border border-cascade-border rounded-xl px-3 py-2 text-sm text-cascade-text placeholder:text-cascade-muted outline-none focus:border-cascade-teal/60 transition-colors"
+              />
+              <textarea
+                value={agentForm.system_prompt}
+                onChange={(e) => setAgentForm((f) => ({ ...f, system_prompt: e.target.value }))}
+                placeholder="Prompt système : décrivez le rôle, le comportement et les instructions de l'agent…"
+                rows={5}
+                className="w-full bg-cascade-surface-2 border border-cascade-border rounded-xl px-3 py-2 text-sm text-cascade-text placeholder:text-cascade-muted outline-none focus:border-cascade-teal/60 transition-colors resize-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={saveCustomAgent}
+              disabled={agentSaving}
+              className="w-full bg-cascade-teal text-cascade-bg rounded-xl py-2.5 text-sm font-semibold disabled:opacity-50 hover:bg-cascade-teal/90 transition-colors"
+            >
+              {agentSaving ? 'Création…' : "Créer l'agent"}
+            </button>
           </div>
         </div>
       )}

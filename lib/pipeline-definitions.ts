@@ -5,12 +5,19 @@ export interface PipelineStep {
   order: number
 }
 
+export interface PipelineTemplate {
+  icon: string
+  label: string
+  text: string
+}
+
 export interface PipelineDefinition {
   id: string
   name: string
   description: string
   icon: string
   briefPlaceholder: string
+  templates: PipelineTemplate[]
   steps: PipelineStep[]
 }
 
@@ -21,6 +28,12 @@ const MARKETING_GENERAL: PipelineDefinition = {
   description: 'Campagne marketing complète : stratégie, contenu, acquisition, sales',
   icon: '🚀',
   briefPlaceholder: 'Décrivez votre marque, produit, cible et objectif marketing...',
+  templates: [
+    { icon: '🛍️', label: 'E-commerce mode', text: 'Boutique e-commerce mode / lifestyle. Lancement de nouvelle collection printemps-été. Cible : femmes 25-40 ans, budget moyen-haut. Objectif : notoriété et premières ventes via Meta et Instagram.' },
+    { icon: '🧴', label: 'Cosmétique bio', text: 'Marque de cosmétiques bio premium. Gamme skincare 5 produits. Cible : femmes 30-50 ans sensibles à l\'écologie. Objectif : augmenter les ventes en ligne de 40% en 3 mois.' },
+    { icon: '🏋️', label: 'Coach sportif', text: 'Coach sportif en ligne spécialisé perte de poids pour cadres actifs 35-50 ans. Programme 12 semaines à 497€. Objectif : 50 nouveaux clients via Facebook et YouTube en 60 jours.' },
+    { icon: '🍕', label: 'Restaurant local', text: 'Restaurant gastronomique local, 30 couverts, ouvert depuis 3 ans. Chef étoilé. Cible : habitants + touristes. Objectif : augmenter réservations semaine et développer clientèle corporate.' },
+  ],
   steps: [
     { slug: 'noam',               name: 'Oumara',  label: 'CEO Agent',          order: 0  },
     { slug: 'market-researcher',  name: 'Lucas',   label: 'Market Researcher',  order: 1  },
@@ -50,6 +63,12 @@ const PRODUCT_LAUNCH: PipelineDefinition = {
   description: 'Go-to-market complet : séquence email 7 jours, page de vente, posts teaser, script YouTube',
   icon: '🎯',
   briefPlaceholder: 'Décrivez votre produit, sa valeur unique, votre cible et votre date de lancement...',
+  templates: [
+    { icon: '📱', label: 'App SaaS B2B', text: 'Lancement d\'un nouveau SaaS B2B de gestion de projet IA pour PME. Prix : 79€/mois. Cible : directeurs opérationnels et DAF de PME 10-200 salariés. Lancement dans 30 jours. Objectif : 100 clients payants mois 1.' },
+    { icon: '📚', label: 'Formation en ligne', text: 'Lancement d\'une formation en ligne copywriting pour entrepreneurs. Prix : 997€. Cible : solopreneurs et fondateurs de startups. Date de lancement : dans 3 semaines. Objectif : 50 ventes via webinaire et email list.' },
+    { icon: '🧪', label: 'Produit physique', text: 'Lancement d\'un complément alimentaire pour la performance cognitive. Prix : 49€/mois en abonnement. Cible : entrepreneurs et étudiants 25-40 ans. Objectif : 200 abonnés via Amazon + site propre.' },
+    { icon: '🤖', label: 'Plugin / Extension', text: 'Lancement d\'une extension Chrome pour automatiser la prospection LinkedIn. Prix : 29€/mois. Cible : commerciaux B2B et agences de croissance. Objectif : 500 utilisateurs gratuits, 50 payants en 30 jours.' },
+  ],
   steps: [
     { slug: 'pl-strategist',      name: 'Axel',    label: 'Launch Strategist',   order: 0 },
     { slug: 'pl-gtm',             name: 'Clara',   label: 'Go-To-Market',        order: 1 },
@@ -71,6 +90,12 @@ const COMPETITOR_AUDIT: PipelineDefinition = {
   description: 'Analyse concurrentielle : positionnement, failles, opportunités, contre-stratégie',
   icon: '🔍',
   briefPlaceholder: 'Entrez les URLs de vos concurrents (séparées par des virgules) et décrivez votre marché...',
+  templates: [
+    { icon: '⚡', label: 'SaaS vs concurrents', text: 'Audit de mes 3 concurrents SaaS (Notion, ClickUp, Monday). Je suis un outil de gestion de projet pour agences créatives. Analyser leur positionnement, contenu, SEO, publicités et identifier mes opportunités de différenciation.' },
+    { icon: '🏪', label: 'E-commerce niche', text: 'Audit de 4 boutiques e-commerce concurrentes dans la niche mode durable. URLs : [à compléter]. Marché : France. Analyser leur offre, prix, stratégie contenu, réseaux sociaux et points faibles exploitables.' },
+    { icon: '🎓', label: 'Infoproduits', text: 'Audit concurrentiel dans le marché de la formation en ligne (copywriting / marketing). Analyser les leaders du marché : leurs offres, leurs prix, leur contenu gratuit, leur tunnel de vente. Identifier les angles non couverts.' },
+    { icon: '🏥', label: 'Services locaux', text: 'Audit concurrentiel de 5 cabinets de kinésithérapie dans ma ville (Paris 11e). Analyser leur présence Google Maps, site web, avis clients, et contenus réseaux sociaux. Identifier comment me différencier.' },
+  ],
   steps: [
     { slug: 'ca-scout',           name: 'Ines',    label: 'Market Scout',        order: 0 },
     { slug: 'ca-positioning',     name: 'Pierre',  label: 'Positioning Analyst', order: 1 },
@@ -90,6 +115,12 @@ const PERSONAL_BRANDING: PipelineDefinition = {
   description: 'Plan contenu 30 jours, 10 posts LinkedIn rédigés, bio optimisée',
   icon: '👤',
   briefPlaceholder: 'Décrivez votre profil, votre expertise, votre audience cible et vos objectifs LinkedIn...',
+  templates: [
+    { icon: '💼', label: 'Consultant freelance', text: 'Consultant freelance en transformation digitale, 10 ans d\'expérience en DSI grands groupes. Spécialité : migration cloud et automatisation processus. Cible : DG et DSI de PME 50-200 salariés. Objectif : 3 nouveaux clients/mois via LinkedIn.' },
+    { icon: '🧑‍💻', label: 'Développeur indie', text: 'Développeur indie maker, créateur de 3 micro-SaaS. Expertise : Next.js, Supabase, automatisations no-code. Cible : autres développeurs et entrepreneurs tech. Objectif : audience 10k abonnés LinkedIn + vente formations.' },
+    { icon: '🎨', label: 'Designer freelance', text: 'Designer UX/UI freelance spécialisé apps mobiles fintech. 7 ans d\'expérience, portfolio 20+ projets. Cible : startups Series A-B et scale-ups. Objectif : attirer des missions premium 800€/jour via LinkedIn.' },
+    { icon: '📊', label: 'Expert comptable', text: 'Expert-comptable libéral spécialisé startups et scale-ups tech. Accompagne 40 sociétés en hyper-croissance. Cible : fondateurs de startups levées Series A. Objectif : devenir LA référence LinkedIn compta startup.' },
+  ],
   steps: [
     { slug: 'pb-identity',        name: 'Léonie',  label: 'Brand Identity',      order: 0 },
     { slug: 'pb-audience',        name: 'Nathan',  label: 'Audience Analyst',    order: 1 },
@@ -110,6 +141,12 @@ const SEO_PIPELINE: PipelineDefinition = {
   description: 'Article 2000 mots optimisé, meta tags, maillage interne, plan backlinks, page blog',
   icon: '📈',
   briefPlaceholder: 'Entrez votre mot-clé principal, votre domaine et votre audience cible...',
+  templates: [
+    { icon: '🔑', label: 'Mot-clé transactionnel', text: 'Mot-clé cible : "meilleur logiciel gestion de projet". Domaine : saas-agence.fr (DA 25). Secteur : SaaS B2B. Audience : directeurs d\'agences 20-100 personnes. Objectif : top 3 Google France.' },
+    { icon: '📖', label: 'Article informatif', text: 'Mot-clé : "comment faire du dropshipping en 2025". Domaine : ecommerce-academy.fr (DA 18). Audience : débutants e-commerce 18-35 ans. Objectif : attirer 500 visiteurs/mois et convertir via lead magnet.' },
+    { icon: '🏠', label: 'SEO local', text: 'Mot-clé : "agence web Lyon". Domaine : webagence-lyon.fr (DA 12). Secteur : agence web/digitale. Audience : TPE/PME de la région lyonnaise. Objectif : top 5 Google Lyon + Google Maps.' },
+    { icon: '🛒', label: 'Fiche produit e-com', text: 'Optimisation page produit e-commerce. Produit : casque audio sans fil premium. Site : audiophile-shop.fr (DA 30). Mot-clé : "casque audio sans fil haute fidélité". Objectif : rank top 10 + augmenter taux de conversion.' },
+  ],
   steps: [
     { slug: 'seo-keyword',        name: 'Nora',    label: 'Keyword Researcher',  order: 0 },
     { slug: 'seo-serp',           name: 'Antoine', label: 'SERP Analyst',        order: 1 },
@@ -130,6 +167,12 @@ const PAID_ADS: PipelineDefinition = {
   description: '5 variantes Facebook Ads, 3 Google Ads, audiences ciblées, budget recommandé',
   icon: '💰',
   briefPlaceholder: 'Décrivez votre offre, votre budget mensuel, votre cible et vos objectifs de conversion...',
+  templates: [
+    { icon: '📦', label: 'Produit physique Meta', text: 'Produit : montre connectée sport premium à 199€. Budget Meta Ads : 2 000€/mois. Cible : hommes 28-45 ans sportifs, revenus >3 500€/mois. Objectif : ROAS 4x, 100 ventes/mois. Marché : France.' },
+    { icon: '🎯', label: 'Lead gen B2B Google', text: 'Service : audit gratuit cybersécurité pour PME. Budget Google Ads : 3 000€/mois. Cible : DSI et DG de PME 50-500 salariés. Objectif : 50 leads qualifiés/mois à moins de 60€/lead. Mots-clés : cybersécurité PME.' },
+    { icon: '🏫', label: 'Formation Meta + Google', text: 'Formation en ligne trading 997€. Budget total : 5 000€/mois (Meta 3k + Google 2k). Cible : salariés 30-50 ans avec épargne, intérêt investissement. Objectif : 15 ventes/mois, ROAS 3x.' },
+    { icon: '🏗️', label: 'Immobilier leads', text: 'Agence immobilière luxe Paris. Budget Meta Ads : 4 000€/mois. Cible : acheteurs potentiels biens 800k€+, expatriés, investisseurs. Objectif : 30 leads qualifiés/mois, taux de closing 20%.' },
+  ],
   steps: [
     { slug: 'ads-brief',          name: 'Luca',    label: 'Ads Strategist',      order: 0 },
     { slug: 'ads-audience',       name: 'Marie',   label: 'Audience Builder',    order: 1 },
@@ -149,6 +192,12 @@ const INFLUENCER: PipelineDefinition = {
   description: 'Brief influenceur, critères de sélection, modèle de contrat, kit presse',
   icon: '🌟',
   briefPlaceholder: 'Décrivez votre marque, votre campagne, votre budget et le profil d\'influenceur souhaité...',
+  templates: [
+    { icon: '💄', label: 'Beauté micro-influenceurs', text: 'Marque cosmétique bio. Budget campagne : 15 000€. Profil recherché : micro-influenceurs beauté 10k-100k abonnés, audience féminine 25-40 ans, taux d\'engagement >4%. Objectif : 50 contenus UGC et 10 000 ventes.' },
+    { icon: '👟', label: 'Mode sportswear', text: 'Marque sportswear premium. Budget : 30 000€. Profil : influenceurs fitness / lifestyle 50k-500k abonnés Instagram + TikTok. Produit gratuit + commission 15%. Objectif : 500k impressions et 200 ventes trackées.' },
+    { icon: '🍔', label: 'Restauration / Food', text: 'Chaîne de restaurants healthy 12 villes France. Budget : 8 000€/mois. Profil : créateurs food/lifestyle locaux 5k-50k abonnés. Objectif : trafic en restaurant + notoriété marque auprès 18-35 ans urbains.' },
+    { icon: '🎮', label: 'Gaming / Tech', text: 'Périphérique gaming (casque pro). Budget : 20 000€. Profil : streamers Twitch et YouTubeurs gaming 20k-200k abonnés. Produit offert + rémunération fixe. Objectif : 1M de vues et 1 000 ventes.' },
+  ],
   steps: [
     { slug: 'inf-strategy',       name: 'Lucie',   label: 'Influencer Strategist', order: 0 },
     { slug: 'inf-criteria',       name: 'Bastien', label: 'Selection Criteria',    order: 1 },
@@ -167,6 +216,12 @@ const COLD_OUTREACH: PipelineDefinition = {
   description: 'ICP → séquence 5 emails cold, LinkedIn messages, script appel découverte',
   icon: '📧',
   briefPlaceholder: 'Décrivez votre ICP (secteur, taille, poste décideur), votre offre et votre proposition de valeur...',
+  templates: [
+    { icon: '🏢', label: 'Agence → PME', text: 'Agence marketing digital ciblant PME e-commerce 1M-10M€ CA. Décideur : CEO ou directeur marketing. Offre : audit gratuit + accompagnement 3 mois 3 000€/mois. Problème résolu : stagnation des ventes en ligne malgré budget ads.' },
+    { icon: '💻', label: 'SaaS → scale-ups', text: 'SaaS RH (gestion entretiens annuels) ciblant scale-ups 50-500 salariés. Décideur : DRH ou COO. Prix : 400€/mois. Problème : processus RH manuels qui font perdre du temps. Proposition : gagner 8h/mois par manager.' },
+    { icon: '🔧', label: 'Conseil → ETI', text: 'Cabinet de conseil en transformation digitale ciblant ETI industrielles 200-2000 salariés. Décideur : DSI et DG. Mission type : 6 mois, 15 000€/mois. Problème : retard digital face aux concurrents asiatiques.' },
+    { icon: '📊', label: 'CFO outreach', text: 'Solution de consolidation financière automatisée ciblant CFO de groupes 500M€+. Décideur : DAF et contrôleur de gestion groupe. Prix : 2 000€/mois. Problème : 40h/mois perdues en consolidation Excel. ROI : 6 mois.' },
+  ],
   steps: [
     { slug: 'co-icp',             name: 'Simon',   label: 'ICP Definer',         order: 0 },
     { slug: 'co-research',        name: 'Hélène',  label: 'Prospect Researcher', order: 1 },
@@ -186,6 +241,12 @@ const PITCH_DECK: PipelineDefinition = {
   description: 'Structure pitch, slides clés, storytelling investisseur, executive summary',
   icon: '💼',
   briefPlaceholder: 'Décrivez votre startup : problème résolu, solution, marché, traction actuelle et montant levée visé...',
+  templates: [
+    { icon: '🌱', label: 'Pre-seed B2B SaaS', text: 'Startup SaaS B2B : plateforme IA de gestion des achats pour PME. Fondée il y a 8 mois. 3 clients pilotes, 12k€ MRR. Marché : 2M de PME en France. Levée visée : 500k€ pre-seed pour product et 3 premiers commerciaux.' },
+    { icon: '🚀', label: 'Seed marketplace', text: 'Marketplace mettant en relation artisans locaux et particuliers pour rénovation. 18 mois, 150 artisans, 800 missions réalisées, 45k€ MRR. Marché : 15Md€ rénovation France. Levée seed : 1,5M€ pour scale commercial.' },
+    { icon: '🧬', label: 'Series A deeptech', text: 'Startup deeptech : IA de détection précoce cancer du poumon via analyse CT-scan. 2 brevets, partenariat avec 3 CHU. 6 médecins co-fondateurs. Validation CE en cours. Levée Series A : 5M€ pour essais cliniques et homologation.' },
+    { icon: '🌍', label: 'Impact / Greentech', text: 'Solution SaaS bilan carbone et décarbonation pour ETI industrielles. 12 clients, 80k€ ARR. Croissance 25%/mois. Marché : réglementation CSRD oblige 50 000 entreprises à se conformer d\'ici 2025. Levée : 2M€ seed.' },
+  ],
   steps: [
     { slug: 'pd-story',           name: 'Élodie',  label: 'Story Architect',     order: 0 },
     { slug: 'pd-problem',         name: 'Victor',  label: 'Problem Framer',      order: 1 },
