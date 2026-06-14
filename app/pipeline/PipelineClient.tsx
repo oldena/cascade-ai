@@ -603,6 +603,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [brief, setBrief] = useState('')
   const [selectedPipelineType, setSelectedPipelineType] = useState<string>(DEFAULT_PIPELINE)
   const [steps, setSteps] = useState<StepState[]>(initStepsForPipeline(DEFAULT_PIPELINE))
+  const PIPELINE_STEPS = (PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).steps
   const [error, setError] = useState<string | null>(null)
   const [recentRuns, setRecentRuns] = useState<PipelineRun[]>(initialRuns)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -736,8 +737,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
 
   // Shared streaming consumer — reads SSE from /api/pipeline/step and updates a single step
   const consumeStepStream = useCallback(async (runId: string, order: number, lang?: string): Promise<boolean> => {
-    const stepCfg = PIPELINE_STEPS[order]
-    setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'running', output: '' } : s))
+    setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'running', output: '' } : s))
 
     const res = await fetch('/api/pipeline/step', {
       method: 'POST',
