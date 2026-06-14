@@ -1216,6 +1216,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       const res = await fetch(`/api/pipeline/${run.id}`)
       if (res.ok) {
         const { steps: dbSteps } = await res.json()
+        const activePipeline = PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]
         setSteps(
           PIPELINE_STEPS.map((s, i) => {
             const dbStep = (dbSteps as Array<{ agent_slug: string; status: string; output: string }>)
@@ -1225,8 +1226,8 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               agentSlug: s.slug,
               agentName: s.name,
               label: s.label,
-              emoji: s.emoji,
-              divisionStart: s.divisionStart,
+              emoji: activePipeline.icon,
+              divisionStart: null,
               status: (dbStep?.status ?? 'pending') as StepState['status'],
               output: dbStep?.output ?? '',
               expanded: false,
@@ -1242,21 +1243,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     }
 
     // Fallback if API fails
-    setSteps(
-      PIPELINE_STEPS.map((s, i) => ({
-        order: i,
-        agentSlug: s.slug,
-        agentName: s.name,
-        label: s.label,
-        emoji: s.emoji,
-        divisionStart: s.divisionStart,
-        status: 'pending' as StepState['status'],
-        output: '',
-        expanded: false,
-        refinement: '',
-        refineStatus: 'idle' as StepState['refineStatus'],
-      }))
-    )
+    setSteps(initStepsForPipeline(selectedPipelineType))
   }, [])
 
   // -------------------------------------------------------------------------
