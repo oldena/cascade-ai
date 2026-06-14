@@ -772,10 +772,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
           if (parsed.error) { streamError = parsed.error; break }
           if (parsed.content) {
             const content = parsed.content
-            setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, output: s.output + content } : s))
+            setSteps((prev) => prev.map((s) => s.order === order ? { ...s, output: s.output + content } : s))
           }
           if (parsed.done) {
-            setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'done' } : s))
+            setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'done' } : s))
           }
         } catch { /* malformed */ }
       }
@@ -792,16 +792,16 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
 
     for (let order = startOrder; order < PIPELINE_STEPS.length; order++) {
       if (abortRef.current) break
-      const stepCfg = PIPELINE_STEPS[order]
       try {
         await consumeStepStream(runId, order, language)
       } catch (err) {
         if (abortRef.current) break
         const msg = err instanceof Error ? err.message : 'Erreur inconnue'
-        setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'failed', output: msg } : s))
+        const stepName = PIPELINE_STEPS[order]?.name ?? `étape ${order}`
+        setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'failed', output: msg } : s))
         pollingRef.current = false
         sessionStorage.removeItem('cascade-active-run')
-        setError(`Erreur agent ${stepCfg.name}: ${msg}`)
+        setError(`Erreur agent ${stepName}: ${msg}`)
         setMode('brief')
         return
       }
@@ -962,12 +962,11 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     if (!currentRunId) return
     const order = PIPELINE_STEPS.findIndex((s) => s.slug === slug)
     if (order === -1) return
-    const stepCfg = PIPELINE_STEPS[order]
     try {
       await consumeStepStream(currentRunId, order)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur inconnue'
-      setSteps((prev) => prev.map((s) => s.agentSlug === stepCfg.slug ? { ...s, status: 'failed', output: msg } : s))
+      setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'failed', output: msg } : s))
     }
   }, [currentRunId, consumeStepStream])
 
