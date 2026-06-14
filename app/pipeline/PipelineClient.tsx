@@ -1158,7 +1158,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     setTone('')
     setFeedback({})
     setShareUrl(null)
-    setSteps(initSteps())
+    setSteps(initStepsForPipeline(selectedPipelineType))
     setError(null)
     setSseConnected(false)
     setMode('brief')
