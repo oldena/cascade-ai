@@ -24,7 +24,7 @@ export function BillingClient({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const res = await fetch('/api/revolut/checkout', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to start checkout')
       window.location.href = data.url
