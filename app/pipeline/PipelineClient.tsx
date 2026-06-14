@@ -1681,19 +1681,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               <div className="flex flex-col">
                 {PIPELINE_STEPS.map((step, i) => (
                   <div key={step.slug}>
-                    {step.divisionStart && (
-                      <div className="flex items-center gap-2 my-2">
-                        <div className="flex-1 h-px bg-cascade-border" />
-                        <span className="text-[9px] font-bold tracking-widest text-cascade-muted uppercase">
-                          {step.divisionStart}
-                        </span>
-                        <div className="flex-1 h-px bg-cascade-border" />
-                      </div>
-                    )}
                     <div className="flex items-start gap-3">
                       <div className="flex flex-col items-center w-8 flex-shrink-0">
                         <div className="w-8 h-8 rounded-full border border-cascade-border bg-cascade-surface-2 flex items-center justify-center text-base">
-                          {step.emoji}
+                          {(PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).icon}
                         </div>
                         {i < PIPELINE_STEPS.length - 1 && (
                           <div className="w-px bg-cascade-border min-h-[1.5rem] flex-1" />
