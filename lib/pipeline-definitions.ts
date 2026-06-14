@@ -260,6 +260,100 @@ const PITCH_DECK: PipelineDefinition = {
   ],
 }
 
+// ─── Pipeline Cabinet d'Architecture ─────────────────────────────────────────
+const ARCHITECTURE: PipelineDefinition = {
+  id: 'architecture',
+  name: 'Cabinet Architecture',
+  description: 'Analyse cahier des charges, contraintes urbanistiques, concepts, estimation coûts, présentation client',
+  icon: '🏛️',
+  briefPlaceholder: 'Décrivez le projet : type de bâtiment, surface, budget, localisation, contraintes particulières...',
+  templates: [
+    { icon: '🏠', label: 'Maison individuelle', text: 'Projet de construction d\'une maison individuelle contemporaine. Surface : 180m². Terrain : 800m² en zone pavillonnaire (PLU R+1). Budget : 450 000€. Client : famille de 4 personnes. Contraintes : orientation sud, intégration paysagère, RT2020.' },
+    { icon: '🏢', label: 'Immeuble bureaux', text: 'Réhabilitation d\'un immeuble de bureaux des années 80 en espace de coworking. Surface : 1 200m² sur 4 étages. Centre-ville Lyon. Budget : 1,8M€. Objectifs : performance énergétique BBC rénovation, accessibilité PMR, espaces modulables.' },
+    { icon: '🏬', label: 'Local commercial', text: 'Création d\'un restaurant gastronomique dans un local commercial existant. Surface : 250m². Paris 8e. Budget : 650 000€. Contraintes : façade classée, cuisine professionnelle aux normes ERP, terrasse en dérogation.' },
+    { icon: '🏗️', label: 'Programme collectif', text: 'Programme de 24 logements collectifs en accession sociale. Terrain de 1 500m² en zone UC. Commune Île-de-France. Budget global : 4,2M€ HT. Contraintes : PLU R+3 + attique, 30% logements accessibles, parkings souterrains.' },
+  ],
+  steps: [
+    { slug: 'arch-brief',        name: 'Alexandre', label: 'Analyse Cahier des Charges', order: 0 },
+    { slug: 'arch-urbanism',     name: 'Sophie',    label: 'Contraintes Urbanistiques',  order: 1 },
+    { slug: 'arch-concept',      name: 'Mathieu',   label: 'Concepts Architecturaux',    order: 2 },
+    { slug: 'arch-costs',        name: 'Isabelle',  label: 'Estimation des Coûts',       order: 3 },
+    { slug: 'arch-risks',        name: 'Thomas',    label: 'Analyse des Risques',        order: 4 },
+    { slug: 'arch-presentation', name: 'Claire',    label: 'Présentation Client',        order: 5 },
+    { slug: 'arch-planning',     name: 'Paul',      label: 'Planning Équipe',            order: 6 },
+  ],
+}
+
+// ─── Pipeline Plombier ────────────────────────────────────────────────────────
+const PLOMBIER: PipelineDefinition = {
+  id: 'plombier',
+  name: 'Artisan Plombier',
+  description: 'IA 24h/24 : qualification urgence, planification RDV, devis, relance client, avis, facturation',
+  icon: '🔧',
+  briefPlaceholder: 'Décrivez la demande client : type de problème, adresse, urgence, informations de contact...',
+  templates: [
+    { icon: '🚨', label: 'Urgence fuite', text: 'Client appelle pour fuite d\'eau importante sous l\'évier de la cuisine. Appartement au 3e étage, Paris 15e. Risque de dégât des eaux pour le voisin du dessous. Disponible immédiatement. Tél : 06 xx xx xx xx.' },
+    { icon: '🚿', label: 'Rénovation salle de bain', text: 'Client souhaite rénover complètement sa salle de bain 8m². Remplacement baignoire par douche à l\'italienne, nouveau WC suspendu, meuble vasque double. Budget : 8 000€. Pas urgent, peut attendre 2-3 semaines.' },
+    { icon: '🌡️', label: 'Chaudière en panne', text: 'Chaudière gaz qui ne démarre plus. Maison individuelle 120m². Haute-Garonne. En plein hiver. Client elderly, 70 ans, vit seul. Contrat entretien annuel signé avec notre société. Panne signalée ce matin.' },
+    { icon: '🏗️', label: 'Nouveau chantier', text: 'Maître d\'œuvre demande un devis pour installation plomberie complète d\'un appartement T3 neuf. Surface 75m². Livraison chantier gros œuvre dans 6 semaines. Plans disponibles. Budget plomberie estimé : 12 000€.' },
+  ],
+  steps: [
+    { slug: 'plomb-intake',   name: 'Emma',   label: 'Réception & Questions Client', order: 0 },
+    { slug: 'plomb-qualify',  name: 'Lucas',  label: 'Qualification Urgence',        order: 1 },
+    { slug: 'plomb-schedule', name: 'Léa',    label: 'Vérification Agenda & RDV',   order: 2 },
+    { slug: 'plomb-confirm',  name: 'Hugo',   label: 'Confirmations & Rappels',      order: 3 },
+    { slug: 'plomb-quote',    name: 'Marie',  label: 'Devis Préliminaire',           order: 4 },
+    { slug: 'plomb-followup', name: 'Pierre', label: 'Relance Post-Intervention',    order: 5 },
+    { slug: 'plomb-review',   name: 'Ana',    label: 'Demande Avis en Ligne',        order: 6 },
+    { slug: 'plomb-invoice',  name: 'Marc',   label: 'Génération Facture',           order: 7 },
+  ],
+}
+
+// ─── Pipeline Électricien ─────────────────────────────────────────────────────
+const ELECTRICIEN: PipelineDefinition = {
+  id: 'electricien',
+  name: 'Artisan Électricien',
+  description: 'Collecte informations, diagnostic, estimation durée, affectation technicien, réservation, fiche intervention',
+  icon: '⚡',
+  briefPlaceholder: 'Décrivez l\'intervention électrique : type de panne ou travaux, adresse, superficie, disponibilités...',
+  templates: [
+    { icon: '💡', label: 'Panne électrique', text: 'Panne électrique partielle dans un appartement T4. Plusieurs prises et lumières ne fonctionnent plus dans la chambre et le couloir. Disjoncteur saute régulièrement. Lyon 6e. Client disponible en journée cette semaine.' },
+    { icon: '🏠', label: 'Mise aux normes', text: 'Maison des années 70, mise aux normes tableau électrique obligatoire pour vente. Maison 150m², 8 circuits. Devis demandé par notaire. Diagnostic électrique réalisé et fourni. Délai : avant signature compromis dans 6 semaines.' },
+    { icon: '🔌', label: 'Borne recharge VE', text: 'Installation borne de recharge voiture électrique (IRVE) dans garage privatif. Appartement en copropriété, Paris 13e. Puissance souhaitée : 7,4 kW. Demande de subvention ADVENIR possible. Devis CONSUEL inclus.' },
+    { icon: '🏢', label: 'Local professionnel', text: 'Aménagement électrique d\'un cabinet médical 200m² (salle d\'attente, 3 cabinets, bureau admin, salle de stérilisation). Normes NF C 15-211. Alimentation onduleur, éclairage LED, 40 prises RJ45. Permis de construire obtenu.' },
+  ],
+  steps: [
+    { slug: 'elec-intake',   name: 'Nicolas', label: 'Collecte des Informations', order: 0 },
+    { slug: 'elec-diagnose', name: 'Julie',   label: 'Diagnostic Intervention',   order: 1 },
+    { slug: 'elec-estimate', name: 'Romain',  label: 'Estimation Durée & Coût',   order: 2 },
+    { slug: 'elec-assign',   name: 'Camille', label: 'Affectation Technicien',    order: 3 },
+    { slug: 'elec-book',     name: 'Alexis',  label: 'Réservation Créneau',       order: 4 },
+    { slug: 'elec-sheet',    name: 'Laura',   label: 'Fiche d\'Intervention',     order: 5 },
+  ],
+}
+
+// ─── Pipeline Business Local ──────────────────────────────────────────────────
+const BUSINESS_LOCAL: PipelineDefinition = {
+  id: 'business-local',
+  name: 'Business Local IA',
+  description: 'Standard téléphonique IA, prise de RDV auto, qualification prospects, devis, relances',
+  icon: '🏪',
+  briefPlaceholder: 'Décrivez votre commerce local : type d\'activité, services, zone géographique, clientèle cible...',
+  templates: [
+    { icon: '💆', label: 'Institut beauté', text: 'Institut de beauté et spa, 5 cabines, 3 esthéticiennes. Lyon Presqu\'île. Services : soins visage, massage, épilation, onglerie. Agenda de 8h à 20h du mardi au samedi. Objectif : automatiser les réservations et réduire les no-shows.' },
+    { icon: '🦷', label: 'Cabinet dentaire', text: 'Cabinet dentaire 2 praticiens + 1 orthodontiste. Bordeaux centre. 400 patients actifs. Consultations, soins courants, implants, orthodontie. Secrétaire médicale partagée, surchargée. Objectif : IA gère les rappels et pré-consultations.' },
+    { icon: '🚗', label: 'Garage automobile', text: 'Garage multimarques, 4 techniciens, atelier carrosserie. Nantes. Services : entretien, réparation, contrôle technique partenaire. 300 clients réguliers. Objectif : IA gère les prises de RDV, rappels révision, relances devis.' },
+    { icon: '🏋️', label: 'Salle de sport', text: 'Salle de sport indépendante 800m², 1 200 membres. Toulouse. CrossFit, musculation, cours collectifs. 3 coachs. Renouvellements abonnements problématiques. Objectif : IA gère les relances, upsells et qualification nouveaux prospects.' },
+  ],
+  steps: [
+    { slug: 'biz-standard', name: 'Sofia',  label: 'Standard IA 24h/24',         order: 0 },
+    { slug: 'biz-rdv',      name: 'Théo',   label: 'Prise de RDV Automatique',   order: 1 },
+    { slug: 'biz-qualify',  name: 'Nadia',  label: 'Qualification Prospects',     order: 2 },
+    { slug: 'biz-quote',    name: 'Éric',   label: 'Génération de Devis',         order: 3 },
+    { slug: 'biz-followup', name: 'Chloé',  label: 'Relances & Suivi Client',     order: 4 },
+  ],
+}
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 export const PIPELINE_DEFINITIONS: Record<string, PipelineDefinition> = {
   'marketing-general': MARKETING_GENERAL,
@@ -271,6 +365,10 @@ export const PIPELINE_DEFINITIONS: Record<string, PipelineDefinition> = {
   'influencer':        INFLUENCER,
   'cold-outreach':     COLD_OUTREACH,
   'pitch-deck':        PITCH_DECK,
+  'architecture':      ARCHITECTURE,
+  'plombier':          PLOMBIER,
+  'electricien':       ELECTRICIEN,
+  'business-local':    BUSINESS_LOCAL,
 }
 
 export const DEFAULT_PIPELINE = 'marketing-general'

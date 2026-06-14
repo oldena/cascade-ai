@@ -28,12 +28,12 @@ type PageMode = 'brief' | 'running' | 'done'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function initStepsForPipeline(pipelineType: string): StepState[] {
+function initStepsForPipeline(pipelineType: string, ceoNameOverride?: string): StepState[] {
   const pipeline = PIPELINE_DEFINITIONS[pipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]
   return pipeline.steps.map((s) => ({
     order: s.order,
     agentSlug: s.slug,
-    agentName: s.name,
+    agentName: s.slug === 'noam' && ceoNameOverride ? ceoNameOverride : s.name,
     label: s.label,
     emoji: pipeline.icon,
     divisionStart: null,
@@ -602,7 +602,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [mode, setMode] = useState<PageMode>('brief')
   const [brief, setBrief] = useState('')
   const [selectedPipelineType, setSelectedPipelineType] = useState<string>(DEFAULT_PIPELINE)
-  const [steps, setSteps] = useState<StepState[]>(initStepsForPipeline(DEFAULT_PIPELINE))
+  const [steps, setSteps] = useState<StepState[]>(() => {
+    const savedCeoName = typeof window !== 'undefined' ? (localStorage.getItem('cascade_ceo_name') || '') : ''
+    return initStepsForPipeline(DEFAULT_PIPELINE, savedCeoName)
+  })
   const PIPELINE_STEPS = (PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).steps
   const [error, setError] = useState<string | null>(null)
   const [recentRuns, setRecentRuns] = useState<PipelineRun[]>(initialRuns)
@@ -646,6 +649,11 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [agentForm, setAgentForm] = useState({ name: '', specialty: '', system_prompt: '', avatar_emoji: '🤖' })
   const [agentSaving, setAgentSaving] = useState(false)
   const [agentError, setAgentError] = useState<string | null>(null)
+
+  // CEO name customization (per user, localStorage)
+  const [ceoName, setCeoName] = useState<string>(() =>
+    typeof window !== 'undefined' ? (localStorage.getItem('cascade_ceo_name') || '') : ''
+  )
 
   // History filter (Sprint 1)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'running' | 'done' | 'failed'>('all')
@@ -835,6 +843,15 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   }, [])
 
   useEffect(() => {
+    if (ceoName) {
+      localStorage.setItem('cascade_ceo_name', ceoName)
+      setSteps((prev) =>
+        prev.map((s) => s.agentSlug === 'noam' ? { ...s, agentName: ceoName } : s)
+      )
+    }
+  }, [ceoName])
+
+  useEffect(() => {
     const saved = sessionStorage.getItem('cascade-active-run')
     if (!saved) return
     let parsed: { runId: string; pipelineType?: string } | null = null
@@ -851,7 +868,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
           steps: Array<{ agent_slug: string; status: string; output: string }>
         }
 
-        const recoveredStepsInit = initStepsForPipeline(recoveredType)
+        const recoveredStepsInit = initStepsForPipeline(recoveredType, ceoName)
 
         if (run.status === 'done') {
           sessionStorage.removeItem('cascade-active-run')
@@ -896,7 +913,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     const finalBrief = buildFinalBrief()
     if (!finalBrief.trim()) return
     setError(null)
-    setSteps(initStepsForPipeline(selectedPipelineType))
+    setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
     setSseConnected(false)
     setMode('running')
 
@@ -928,7 +945,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       const msg = err instanceof Error ? err.message : 'Erreur de connexion'
       setError(msg)
       setMode('brief')
-      setSteps(initStepsForPipeline(selectedPipelineType))
+      setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
     }
   }, [buildFinalBrief, runSteps, selectedPipelineType])
 
@@ -1199,7 +1216,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     setTone('')
     setFeedback({})
     setShareUrl(null)
-    setSteps(initStepsForPipeline(selectedPipelineType))
+    setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
     setError(null)
     setSseConnected(false)
     setMode('brief')
@@ -1284,7 +1301,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     }
 
     // Fallback if API fails
-    setSteps(initStepsForPipeline(selectedPipelineType))
+    setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
   }, [])
 
   // -------------------------------------------------------------------------
@@ -1732,6 +1749,21 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
+                </div>
+              )}
+
+              {/* CEO name customization — shown only for pipelines with a CEO (noam) agent */}
+              {(PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).steps.some((s) => s.slug === 'noam') && (
+                <div className="flex items-center gap-2 border-t border-cascade-border pt-3">
+                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider flex-shrink-0">CEO</span>
+                  <input
+                    type="text"
+                    value={ceoName}
+                    onChange={(e) => setCeoName(e.target.value)}
+                    placeholder="Oumara"
+                    maxLength={40}
+                    className="flex-1 bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-1.5 text-cascade-text text-xs outline-none focus:border-cascade-teal/60 transition-colors placeholder:text-cascade-muted"
+                  />
                 </div>
               )}
 
