@@ -2,15 +2,17 @@ import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createOAuthState } from '@/lib/oauth-helpers'
+import { getOAuthCreds } from '@/lib/oauth-credentials'
 
 export async function GET() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
+  const { clientId } = await getOAuthCreds('linkedin')
   const state = await createOAuthState(userId, 'linkedin')
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: process.env.LINKEDIN_CLIENT_ID!,
+    client_id: clientId,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/linkedin/callback`,
     state,
     scope: 'r_liteprofile w_member_social r_organization_social w_organization_social',

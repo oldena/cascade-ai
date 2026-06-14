@@ -1,6 +1,7 @@
 import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { fireOutboundWebhooks } from '@/lib/outbound-webhooks'
 
 const PIPELINE_STEPS = [
   { slug: 'noam',               name: 'Oumara',  label: 'CEO Agent',          order: 0  },
@@ -183,6 +184,12 @@ OUTPUT REQUIREMENTS (mandatory for every response):
         const isLast = stepOrder === PIPELINE_STEPS.length - 1
         if (isLast) {
           await supabaseAdmin.from('pipeline_runs').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', runId)
+          fireOutboundWebhooks(userId, 'pipeline.completed', {
+            run_id: runId,
+            user_id: userId,
+            status: 'done',
+            created_at: new Date().toISOString(),
+          }).catch(console.error)
         }
         ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, isLast })}\n\n`))
       } catch (err) {

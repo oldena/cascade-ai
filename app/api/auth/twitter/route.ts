@@ -13,9 +13,10 @@ export async function GET() {
   // Store verifier in cookie via state
   const state = await createOAuthState(userId, 'twitter', codeVerifier)
 
+  const { clientId } = await getOAuthCreds('twitter')
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: process.env.TWITTER_CLIENT_ID!,
+    client_id: clientId,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/twitter/callback`,
     scope: 'tweet.read tweet.write users.read offline.access',
     state,

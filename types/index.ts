@@ -3,9 +3,39 @@ export type Plan = 'starter' | 'agency'
 export interface User {
   id: string
   email: string
-  stripe_customer_id: string | null
-  stripe_subscription_id: string | null
+  payment_customer_id: string | null
+  payment_subscription_id: string | null
   plan: Plan
+  created_at: string
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 3 — Webhooks / White-label / API keys
+// ---------------------------------------------------------------------------
+
+export interface UserWebhook {
+  id: string
+  user_id: string
+  name: string
+  url: string
+  events: string[]
+  active: boolean
+  created_at: string
+}
+
+export interface WhiteLabelSettings {
+  company_name: string
+  logo_url: string
+  primary_color: string
+  custom_domain: string | null
+}
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  last_used_at: string | null
+  revoked_at: string | null
   created_at: string
 }
 
