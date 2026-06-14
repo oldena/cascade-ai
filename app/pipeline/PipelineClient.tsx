@@ -2,44 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { PipelineRun } from './page'
-
-// ---------------------------------------------------------------------------
-// Pipeline steps config
-// ---------------------------------------------------------------------------
-
-interface PipelineStepConfig {
-  slug: string
-  name: string
-  label: string
-  emoji: string
-  divisionStart: string | null
-}
-
-const PIPELINE_STEPS: PipelineStepConfig[] = [
-  // CEO
-  { slug: 'noam',               name: 'Oumara',    label: 'CEO Agent',          emoji: '🎯', divisionStart: null                  },
-  // Strategy Division
-  { slug: 'market-researcher',  name: 'Lucas',   label: 'Market Researcher',  emoji: '🔍', divisionStart: 'STRATEGY DIVISION'   },
-  { slug: 'antoine',            name: 'Antoine', label: 'Brand Strategist',   emoji: '🧠', divisionStart: null                  },
-  { slug: 'offer-strategist',   name: 'Marco',   label: 'Offer Strategist',   emoji: '💡', divisionStart: null                  },
-  { slug: 'funnel-architect',   name: 'Diana',   label: 'Funnel Architect',   emoji: '🔧', divisionStart: null                  },
-  // Content Division
-  { slug: 'social-strategist',  name: 'Sophie',  label: 'Social Strategist',  emoji: '📅', divisionStart: 'CONTENT DIVISION'    },
-  { slug: 'lea',                name: 'Léa',     label: 'Senior Copywriter',  emoji: '✍️', divisionStart: null                  },
-  { slug: 'mia',                name: 'Mia',     label: 'Creative Director',  emoji: '🎨', divisionStart: null                  },
-  { slug: 'video-scriptwriter', name: 'Camille', label: 'Video Scriptwriter', emoji: '🎬', divisionStart: null                  },
-  { slug: 'ugc-creator',        name: 'Jade',    label: 'UGC Creator',        emoji: '📱', divisionStart: null                  },
-  { slug: 'youtube-strategist', name: 'Sam',     label: 'YouTube Strategist', emoji: '▶️', divisionStart: null                  },
-  // Acquisition Division
-  { slug: 'ads-manager',        name: 'Max',     label: 'Ads Manager',        emoji: '📢', divisionStart: 'ACQUISITION DIVISION' },
-  { slug: 'seo-specialist',     name: 'Lena',    label: 'SEO Specialist',     emoji: '🔎', divisionStart: null                  },
-  { slug: 'lead-gen',           name: 'Nina',    label: 'Lead Generation',    emoji: '🎯', divisionStart: null                  },
-  { slug: 'cold-outreach',      name: 'Victor',  label: 'Cold Outreach',      emoji: '📧', divisionStart: null                  },
-  // Sales Division
-  { slug: 'closer',             name: 'Rafael',  label: 'Sales Closer',       emoji: '🤝', divisionStart: 'SALES DIVISION'      },
-  { slug: 'crm-manager',        name: 'Emma',    label: 'CRM Manager',        emoji: '📋', divisionStart: null                  },
-  { slug: 'customer-success',   name: 'Zoé',     label: 'Customer Success',   emoji: '⭐', divisionStart: null                  },
-]
+import { PIPELINE_DEFINITIONS, DEFAULT_PIPELINE } from '@/lib/pipeline-definitions'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,19 +28,20 @@ type PageMode = 'brief' | 'running' | 'done'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function initSteps(): StepState[] {
-  return PIPELINE_STEPS.map((s, i) => ({
-    order: i,
+function initStepsForPipeline(pipelineType: string): StepState[] {
+  const pipeline = PIPELINE_DEFINITIONS[pipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]
+  return pipeline.steps.map((s) => ({
+    order: s.order,
     agentSlug: s.slug,
     agentName: s.name,
     label: s.label,
-    emoji: s.emoji,
-    divisionStart: s.divisionStart,
-    status: 'pending',
+    emoji: pipeline.icon,
+    divisionStart: null,
+    status: 'pending' as StepState['status'],
     output: '',
     expanded: false,
     refinement: '',
-    refineStatus: 'idle',
+    refineStatus: 'idle' as StepState['refineStatus'],
   }))
 }
 
@@ -637,7 +601,8 @@ interface Props {
 export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [mode, setMode] = useState<PageMode>('brief')
   const [brief, setBrief] = useState('')
-  const [steps, setSteps] = useState<StepState[]>(initSteps())
+  const [selectedPipelineType, setSelectedPipelineType] = useState<string>(DEFAULT_PIPELINE)
+  const [steps, setSteps] = useState<StepState[]>(initStepsForPipeline(DEFAULT_PIPELINE))
   const [error, setError] = useState<string | null>(null)
   const [recentRuns, setRecentRuns] = useState<PipelineRun[]>(initialRuns)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -856,9 +821,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   useEffect(() => {
     const saved = sessionStorage.getItem('cascade-active-run')
     if (!saved) return
-    let parsed: { runId: string } | null = null
+    let parsed: { runId: string; pipelineType?: string } | null = null
     try { parsed = JSON.parse(saved) } catch { sessionStorage.removeItem('cascade-active-run'); return }
     if (!parsed?.runId) return
+    const recoveredType = parsed.pipelineType ?? DEFAULT_PIPELINE
 
     void (async () => {
       try {
@@ -869,13 +835,16 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
           steps: Array<{ agent_slug: string; status: string; output: string }>
         }
 
+        const recoveredStepsInit = initStepsForPipeline(recoveredType)
+
         if (run.status === 'done') {
           sessionStorage.removeItem('cascade-active-run')
           setBrief(run.brief ?? '')
           setCurrentRunId(parsed!.runId)
-          setSteps(PIPELINE_STEPS.map((s, i) => {
-            const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
-            return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: 'done' as StepState['status'], output: db?.output ?? '', expanded: false, refinement: '', refineStatus: 'idle' as StepState['refineStatus'] }
+          setSelectedPipelineType(recoveredType)
+          setSteps(recoveredStepsInit.map((s) => {
+            const db = dbSteps.find((ds) => ds.agent_slug === s.agentSlug)
+            return { ...s, status: 'done' as StepState['status'], output: db?.output ?? '' }
           }))
           setMode('done')
           return
@@ -887,9 +856,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
 
         // Still running — restore done steps and resume from first non-done
         setBrief(run.brief ?? '')
-        setSteps(PIPELINE_STEPS.map((s, i) => {
-          const db = dbSteps.find((ds) => ds.agent_slug === s.slug)
-          return { order: i, agentSlug: s.slug, agentName: s.name, label: s.label, emoji: s.emoji, divisionStart: s.divisionStart, status: (db?.status ?? 'pending') as StepState['status'], output: db?.output ?? '', expanded: false, refinement: '', refineStatus: 'idle' as StepState['refineStatus'] }
+        setSelectedPipelineType(recoveredType)
+        setSteps(recoveredStepsInit.map((s) => {
+          const db = dbSteps.find((ds) => ds.agent_slug === s.agentSlug)
+          return { ...s, status: (db?.status ?? 'pending') as StepState['status'], output: db?.output ?? '' }
         }))
         setSseConnected(true)
         setMode('running')
@@ -910,7 +880,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     const finalBrief = buildFinalBrief()
     if (!finalBrief.trim()) return
     setError(null)
-    setSteps(initSteps())
+    setSteps(initStepsForPipeline(selectedPipelineType))
     setSseConnected(false)
     setMode('running')
 
@@ -918,7 +888,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       const res = await fetch('/api/pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief: finalBrief }),
+        body: JSON.stringify({ brief: finalBrief, pipelineType: selectedPipelineType }),
       })
 
       if (!res.ok) {
@@ -932,7 +902,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       if (!runId) throw new Error('Pas de runId reçu du serveur')
 
       // Persist so page reload can recover
-      sessionStorage.setItem('cascade-active-run', JSON.stringify({ runId }))
+      sessionStorage.setItem('cascade-active-run', JSON.stringify({ runId, pipelineType: selectedPipelineType }))
       setSseConnected(true)
       void runSteps(runId)
 
@@ -942,9 +912,9 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       const msg = err instanceof Error ? err.message : 'Erreur de connexion'
       setError(msg)
       setMode('brief')
-      setSteps(initSteps())
+      setSteps(initStepsForPipeline(selectedPipelineType))
     }
-  }, [buildFinalBrief, runSteps])
+  }, [buildFinalBrief, runSteps, selectedPipelineType])
 
   // -------------------------------------------------------------------------
   // Export all outputs to clipboard as markdown
@@ -1506,8 +1476,31 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                 Lancer le pipeline IA
               </h1>
               <p className="mt-2 text-cascade-text-2">
-                Votre brief passe par les 18 agents du pipeline en séquence
+                Choisissez un pipeline spécialisé, rédigez votre brief, et laissez nos agents travailler en séquence
               </p>
+            </div>
+
+            {/* Pipeline type selector */}
+            <div className="space-y-2">
+              <p className="text-xs text-cascade-muted font-medium uppercase tracking-wider">Type de Pipeline</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {Object.values(PIPELINE_DEFINITIONS).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPipelineType(p.id)}
+                    className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                      selectedPipelineType === p.id
+                        ? 'border-cascade-teal bg-cascade-teal/10 text-cascade-teal'
+                        : 'border-cascade-border bg-cascade-surface-2 hover:border-cascade-teal/40 hover:bg-cascade-surface text-cascade-text-2'
+                    }`}
+                  >
+                    <span className="text-lg">{p.icon}</span>
+                    <span className="text-xs font-medium">{p.name}</span>
+                    <span className="text-[10px] text-cascade-muted line-clamp-2">{p.description}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Templates (Feature 7) */}
@@ -1539,7 +1532,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               <textarea
                 value={brief}
                 onChange={(e) => setBrief(e.target.value)}
-                placeholder="Décrivez votre brief client…"
+                placeholder={PIPELINE_DEFINITIONS[selectedPipelineType]?.briefPlaceholder ?? 'Décrivez votre brief client…'}
                 rows={5}
                 className="w-full bg-cascade-surface-2 border border-cascade-border rounded-xl px-4 py-3 text-cascade-text placeholder:text-cascade-muted text-sm resize-none outline-none focus:border-cascade-teal/60 transition-colors"
               />

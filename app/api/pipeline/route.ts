@@ -1,33 +1,7 @@
 import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-
-
-const PIPELINE_STEPS = [
-  // CEO
-  { slug: 'noam',               name: 'Oumara',  label: 'CEO Agent',          order: 0  },
-  // Strategy Division
-  { slug: 'market-researcher',  name: 'Lucas',   label: 'Market Researcher',  order: 1  },
-  { slug: 'antoine',            name: 'Antoine', label: 'Brand Strategist',   order: 2  },
-  { slug: 'offer-strategist',   name: 'Marco',   label: 'Offer Strategist',   order: 3  },
-  { slug: 'funnel-architect',   name: 'Diana',   label: 'Funnel Architect',   order: 4  },
-  // Content Division
-  { slug: 'social-strategist',  name: 'Sophie',  label: 'Social Strategist',  order: 5  },
-  { slug: 'lea',                name: 'Léa',     label: 'Senior Copywriter',  order: 6  },
-  { slug: 'mia',                name: 'Mia',     label: 'Creative Director',  order: 7  },
-  { slug: 'video-scriptwriter', name: 'Camille', label: 'Video Scriptwriter', order: 8  },
-  { slug: 'ugc-creator',        name: 'Jade',    label: 'UGC Creator',        order: 9  },
-  { slug: 'youtube-strategist', name: 'Sam',     label: 'YouTube Strategist', order: 10 },
-  // Acquisition Division
-  { slug: 'ads-manager',        name: 'Max',     label: 'Ads Manager',        order: 11 },
-  { slug: 'seo-specialist',     name: 'Lena',    label: 'SEO Specialist',     order: 12 },
-  { slug: 'lead-gen',           name: 'Nina',    label: 'Lead Generation',    order: 13 },
-  { slug: 'cold-outreach',      name: 'Victor',  label: 'Cold Outreach',      order: 14 },
-  // Sales Division
-  { slug: 'closer',             name: 'Rafael',  label: 'Sales Closer',       order: 15 },
-  { slug: 'crm-manager',        name: 'Emma',    label: 'CRM Manager',        order: 16 },
-  { slug: 'customer-success',   name: 'Zoé',     label: 'Customer Success',   order: 17 },
-]
+import { getPipelineSteps, PIPELINE_DEFINITIONS, DEFAULT_PIPELINE } from '@/lib/pipeline-definitions'
 
 export async function POST(req: Request) {
   if (!process.env.MISTRAL_API_KEY) {
@@ -59,7 +33,7 @@ export async function POST(req: Request) {
     })
   }
 
-  let body: { brief: string }
+  let body: { brief: string; pipelineType?: string }
   try {
     body = await req.json()
   } catch {
@@ -69,13 +43,16 @@ export async function POST(req: Request) {
     })
   }
 
-  const { brief } = body
+  const { brief, pipelineType = DEFAULT_PIPELINE } = body
   if (!brief?.trim()) {
     return new Response(JSON.stringify({ error: 'brief is required' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  const resolvedType = PIPELINE_DEFINITIONS[pipelineType] ? pipelineType : DEFAULT_PIPELINE
+  const PIPELINE_STEPS = getPipelineSteps(resolvedType)
 
   // Verify user exists
   const { data: user, error: userError } = await supabaseAdmin
@@ -109,7 +86,7 @@ export async function POST(req: Request) {
   // Create pipeline_run row
   const { data: run, error: runError } = await supabaseAdmin
     .from('pipeline_runs')
-    .insert({ user_id: userId, brief, status: 'running' })
+    .insert({ user_id: userId, brief, status: 'running', pipeline_type: resolvedType })
     .select('id')
     .single()
 

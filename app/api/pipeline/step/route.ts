@@ -2,27 +2,7 @@ import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { fireOutboundWebhooks } from '@/lib/outbound-webhooks'
-
-const PIPELINE_STEPS = [
-  { slug: 'noam',               name: 'Oumara',  label: 'CEO Agent',          order: 0  },
-  { slug: 'market-researcher',  name: 'Lucas',   label: 'Market Researcher',  order: 1  },
-  { slug: 'antoine',            name: 'Antoine', label: 'Brand Strategist',   order: 2  },
-  { slug: 'offer-strategist',   name: 'Marco',   label: 'Offer Strategist',   order: 3  },
-  { slug: 'funnel-architect',   name: 'Diana',   label: 'Funnel Architect',   order: 4  },
-  { slug: 'social-strategist',  name: 'Sophie',  label: 'Social Strategist',  order: 5  },
-  { slug: 'lea',                name: 'Léa',     label: 'Senior Copywriter',  order: 6  },
-  { slug: 'mia',                name: 'Mia',     label: 'Creative Director',  order: 7  },
-  { slug: 'video-scriptwriter', name: 'Camille', label: 'Video Scriptwriter', order: 8  },
-  { slug: 'ugc-creator',        name: 'Jade',    label: 'UGC Creator',        order: 9  },
-  { slug: 'youtube-strategist', name: 'Sam',     label: 'YouTube Strategist', order: 10 },
-  { slug: 'ads-manager',        name: 'Max',     label: 'Ads Manager',        order: 11 },
-  { slug: 'seo-specialist',     name: 'Lena',    label: 'SEO Specialist',     order: 12 },
-  { slug: 'lead-gen',           name: 'Nina',    label: 'Lead Generation',    order: 13 },
-  { slug: 'cold-outreach',      name: 'Victor',  label: 'Cold Outreach',      order: 14 },
-  { slug: 'closer',             name: 'Rafael',  label: 'Sales Closer',       order: 15 },
-  { slug: 'crm-manager',        name: 'Emma',    label: 'CRM Manager',        order: 16 },
-  { slug: 'customer-success',   name: 'Zoé',     label: 'Customer Success',   order: 17 },
-]
+import { getPipelineSteps } from '@/lib/pipeline-definitions'
 
 export async function POST(req: Request) {
   const { userId } = await auth()
@@ -42,21 +22,22 @@ export async function POST(req: Request) {
     return Response.json({ error: 'runId and stepOrder required' }, { status: 400 })
   }
 
-  const step = PIPELINE_STEPS.find((s) => s.order === stepOrder)
-  if (!step) {
-    return Response.json({ error: `Unknown stepOrder: ${stepOrder}` }, { status: 400 })
-  }
-
-  // Verify ownership + fetch brief
+  // Verify ownership + fetch brief + pipeline type
   const { data: run } = await supabaseAdmin
     .from('pipeline_runs')
-    .select('brief')
+    .select('brief, pipeline_type')
     .eq('id', runId)
     .eq('user_id', userId)
     .single()
 
   if (!run) {
     return Response.json({ error: 'Run not found' }, { status: 404 })
+  }
+
+  const PIPELINE_STEPS = getPipelineSteps(run.pipeline_type ?? 'marketing-general')
+  const step = PIPELINE_STEPS.find((s) => s.order === stepOrder)
+  if (!step) {
+    return Response.json({ error: `Unknown stepOrder: ${stepOrder}` }, { status: 400 })
   }
 
   // Fetch agent system prompt
