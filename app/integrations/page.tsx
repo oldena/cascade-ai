@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 // ---------------------------------------------------------------------------
 
 interface IntegrationFields {
+  // Company context
+  company_context: string
   // Existing
   metricool_token: string
   metricool_username: string
@@ -52,6 +54,7 @@ interface Section {
 // ---------------------------------------------------------------------------
 
 const EMPTY: IntegrationFields = {
+  company_context: '',
   metricool_token: '', metricool_username: '',
   meta_access_token: '', meta_ad_account_id: '',
   resend_api_key: '', resend_from_email: '', resend_from_name: '',
@@ -272,6 +275,25 @@ export default function IntegrationsPage() {
           <p className="text-white/40 text-sm">
             Connectez vos outils de communication. Les identifiants sont chiffrés et jamais partagés.
           </p>
+        </div>
+
+        {/* Company context */}
+        <div className="mb-8 rounded-xl border border-white/8 p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <span className="text-xl">🏢</span>
+            <div>
+              <p className="font-semibold text-sm text-white/90">Contexte Entreprise</p>
+              <p className="text-[10px] text-white/35">Injecté dans chaque agent IA — décrivez votre marque, offre, ton et cibles.</p>
+            </div>
+          </div>
+          <textarea
+            rows={5}
+            value={fields.company_context}
+            onChange={(e) => handleChange('company_context', e.target.value)}
+            placeholder={"Nom : Cascade Agency\nSecteur : Marketing digital B2B\nOffre : Stratégie contenu + automation IA\nTon : Expert, direct, sans jargon\nCibles : PME françaises 10-200 salariés\nDifférenciation : 100% IA, résultats en 48h"}
+            className="w-full bg-[#0d0d0d] border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#6366f1] transition-colors resize-none font-mono"
+          />
+          <p className="text-[10px] text-white/30 mt-2">Ce texte est ajouté automatiquement à chaque prompt d&apos;agent pour personnaliser les résultats.</p>
         </div>
 
         {/* Status overview */}

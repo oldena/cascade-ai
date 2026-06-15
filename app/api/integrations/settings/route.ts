@@ -9,6 +9,7 @@ const ALL_FIELDS = [
   'notion_token', 'notion_database_id',
   'whatsapp_token', 'whatsapp_phone_id',
   'telegram_bot_token', 'telegram_chat_id',
+  'company_context',
 ] as const
 
 type FieldKey = typeof ALL_FIELDS[number]

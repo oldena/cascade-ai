@@ -40,15 +40,16 @@ export async function POST(req: Request) {
     return Response.json({ error: `Unknown stepOrder: ${stepOrder}` }, { status: 400 })
   }
 
-  // Fetch agent system prompt
-  const { data: agent } = await supabaseAdmin
-    .from('agents')
-    .select('system_prompt')
-    .eq('slug', step.slug)
-    .single()
+  // Fetch agent system prompt + company context in parallel
+  const [{ data: agent }, { data: companyRow }] = await Promise.all([
+    supabaseAdmin.from('agents').select('system_prompt').eq('slug', step.slug).single(),
+    supabaseAdmin.from('user_integrations').select('company_context').eq('user_id', userId).single(),
+  ])
 
+  const companyCtx = (companyRow as { company_context?: string | null } | null)?.company_context
   const basePrompt = agent?.system_prompt ?? `You are ${step.name}, a specialist AI agent.`
-  const systemPrompt = `${basePrompt}
+  const companyBlock = companyCtx ? `\n\nCONTEXTE CLIENT:\n${companyCtx}\n` : ''
+  const systemPrompt = `${basePrompt}${companyBlock}
 
 IMPORTANT: You MUST respond entirely in ${language ?? 'French (français)'}. Do not use any other language under any circumstances.
 

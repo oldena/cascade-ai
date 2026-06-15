@@ -64,6 +64,8 @@ function statusBadgeClass(status: PipelineRun['status']): string {
 // StepRow sub-component
 // ---------------------------------------------------------------------------
 
+type SendChannel = 'email' | 'telegram' | 'whatsapp' | 'notion'
+
 function StepRow({
   step,
   onToggle,
@@ -78,6 +80,8 @@ function StepRow({
   refineStatus = 'idle',
   onPublish,
   publishStatus = 'idle',
+  onSend,
+  sendStatus = 'idle',
 }: {
   step: StepState
   onToggle: (slug: string) => void
@@ -92,7 +96,13 @@ function StepRow({
   refineStatus?: 'idle' | 'running' | 'done'
   onPublish?: (slug: string, content: string, type: 'metricool' | 'meta-ads') => void
   publishStatus?: 'idle' | 'publishing' | 'done' | 'error'
+  onSend?: (slug: string, content: string, channel: SendChannel, recipient: string) => void
+  sendStatus?: 'idle' | 'sending' | 'done' | 'error'
 }) {
+  const [sendOpen, setSendOpen] = useState(false)
+  const [sendChannel, setSendChannel] = useState<SendChannel>('email')
+  const [sendRecipient, setSendRecipient] = useState('')
+
   const isPending = step.status === 'pending'
   const isRunning = step.status === 'running'
   const isDone = step.status === 'done'
@@ -239,6 +249,20 @@ function StepRow({
               className="text-xs text-cascade-teal hover:underline px-2 py-1 rounded"
             >
               {step.expanded ? 'Masquer' : 'Voir'}
+            </button>
+          )}
+          {isDone && step.output && onSend && (
+            <button
+              onClick={() => setSendOpen((v) => !v)}
+              className={`text-xs px-2 py-0.5 rounded-md border transition-colors ${
+                sendOpen
+                  ? 'border-cascade-teal/50 text-cascade-teal bg-cascade-teal/10'
+                  : sendStatus === 'done'
+                  ? 'border-emerald-500/40 text-emerald-400'
+                  : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal bg-cascade-surface-2'
+              }`}
+            >
+              {sendStatus === 'done' ? 'Envoyé ✓' : sendStatus === 'error' ? 'Erreur' : '↑ Envoyer'}
             </button>
           )}
           {isFailed && <span className="text-xs text-cascade-red">Erreur</span>}
@@ -414,6 +438,53 @@ function StepRow({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Send panel */}
+      {isDone && sendOpen && onSend && (
+        <div className="border-t border-cascade-border px-4 py-3 space-y-3">
+          <p className="text-[10px] text-cascade-muted uppercase tracking-widest font-semibold">Envoyer via</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {(['email', 'telegram', 'whatsapp', 'notion'] as SendChannel[]).map((ch) => {
+              const labels: Record<SendChannel, string> = { email: '📧 Email', telegram: '✈️ Telegram', whatsapp: '💬 WhatsApp', notion: '📓 Notion' }
+              return (
+                <button
+                  key={ch}
+                  type="button"
+                  onClick={() => setSendChannel(ch)}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                    sendChannel === ch
+                      ? 'border-cascade-teal/50 text-cascade-teal bg-cascade-teal/10'
+                      : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/30 bg-cascade-surface-2'
+                  }`}
+                >
+                  {labels[ch]}
+                </button>
+              )
+            })}
+          </div>
+          {(sendChannel === 'email' || sendChannel === 'whatsapp') && (
+            <input
+              type="text"
+              value={sendRecipient}
+              onChange={(e) => setSendRecipient(e.target.value)}
+              placeholder={sendChannel === 'email' ? 'client@example.com' : '+33612345678'}
+              className="w-full text-xs bg-cascade-surface-2 border border-cascade-border rounded-lg px-3 py-2 text-cascade-text placeholder:text-cascade-muted focus:outline-none focus:border-cascade-teal/50 transition-colors"
+            />
+          )}
+          <button
+            type="button"
+            disabled={sendStatus === 'sending' || ((sendChannel === 'email' || sendChannel === 'whatsapp') && !sendRecipient.trim())}
+            onClick={() => {
+              onSend(step.agentSlug, step.output, sendChannel, sendRecipient)
+              setSendOpen(false)
+            }}
+            className="text-xs px-3 py-1.5 rounded-lg bg-cascade-teal/10 border border-cascade-teal/30 text-cascade-teal hover:bg-cascade-teal/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {sendStatus === 'sending' ? 'Envoi…' : 'Envoyer'}
+          </button>
+          {sendStatus === 'error' && <p className="text-xs text-cascade-red">Erreur lors de l&apos;envoi. Vérifiez vos intégrations.</p>}
         </div>
       )}
 
@@ -667,6 +738,48 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [publishModal, setPublishModal] = useState<{ slug: string; content: string; type: 'metricool' | 'meta-ads' } | null>(null)
   const [publishStatus, setPublishStatus] = useState<Record<string, 'idle' | 'publishing' | 'done' | 'error'>>({})
   const [publishError, setPublishError] = useState<string | null>(null)
+  const [sendStatus, setSendStatus] = useState<Record<string, 'idle' | 'sending' | 'done' | 'error'>>({})
+
+  const handleSend = useCallback(async (slug: string, content: string, channel: SendChannel, recipient: string) => {
+    setSendStatus((p) => ({ ...p, [slug]: 'sending' }))
+    try {
+      let res: Response
+      if (channel === 'email') {
+        res = await fetch('/api/integrations/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: recipient, subject: `Cascade AI — Résultats ${slug}`, content }),
+        })
+      } else if (channel === 'telegram') {
+        res = await fetch('/api/integrations/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: content }),
+        })
+      } else if (channel === 'whatsapp') {
+        res = await fetch('/api/integrations/whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: recipient, message: content }),
+        })
+      } else {
+        res = await fetch('/api/integrations/notion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: `Cascade AI — ${slug}`, content }),
+        })
+      }
+      if (!res.ok) {
+        const err = await res.json() as { error?: string }
+        throw new Error(err.error ?? 'Erreur')
+      }
+      setSendStatus((p) => ({ ...p, [slug]: 'done' }))
+      setTimeout(() => setSendStatus((p) => ({ ...p, [slug]: 'idle' })), 4000)
+    } catch {
+      setSendStatus((p) => ({ ...p, [slug]: 'error' }))
+      setTimeout(() => setSendStatus((p) => ({ ...p, [slug]: 'idle' })), 5000)
+    }
+  }, [])
   const [publishNetwork, setPublishNetwork] = useState<string[]>(['instagram'])
   const [publishDate, setPublishDate] = useState(() => {
     const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0)
@@ -1959,6 +2072,8 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                     refineStatus={step.refineStatus}
                     onPublish={openPublishModal}
                     publishStatus={publishStatus[step.agentSlug] ?? 'idle'}
+                    onSend={handleSend}
+                    sendStatus={sendStatus[step.agentSlug] ?? 'idle'}
                   />
                 </div>
               ))}
