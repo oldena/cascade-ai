@@ -82,7 +82,7 @@ export default async function AnalyticsPage() {
       .eq('user_id', userId)
       .gte('created_at', new Date(Date.now() - 7 * 86400_000).toISOString()),
     supabaseAdmin
-      .from('clients')
+      .from('client_profiles')
       .select('id, name')
       .eq('user_id', userId),
   ])

@@ -17,7 +17,7 @@ export async function GET() {
       .select('run_id, agent_slug, status, step_order, created_at, updated_at')
       .in('run_id', (await supabaseAdmin.from('pipeline_runs').select('id').eq('user_id', userId)).data?.map(r => r.id) ?? []),
     supabaseAdmin
-      .from('clients')
+      .from('client_profiles')
       .select('id, name')
       .eq('user_id', userId),
   ])
