@@ -6,35 +6,112 @@ import { useState, useEffect, useCallback } from 'react'
 // Config
 // ---------------------------------------------------------------------------
 
-const CALENDAR_AGENTS = [
-  { slug: 'social-strategist',  name: 'Sophie',  label: 'Social Strategist',  emoji: '📅' },
-  { slug: 'lea',                name: 'Léa',     label: 'Senior Copywriter',  emoji: '✍️' },
-  { slug: 'mia',                name: 'Mia',     label: 'Creative Director',  emoji: '🎨' },
-  { slug: 'video-scriptwriter', name: 'Camille', label: 'Video Scriptwriter', emoji: '🎬' },
-  { slug: 'ugc-creator',        name: 'Jade',    label: 'UGC Creator',        emoji: '📱' },
-  { slug: 'youtube-strategist', name: 'Sam',     label: 'YouTube Strategist', emoji: '▶️' },
-  { slug: 'ads-manager',        name: 'Max',     label: 'Ads Manager',        emoji: '📢' },
-  { slug: 'seo-specialist',     name: 'Lena',    label: 'SEO Specialist',     emoji: '🔎' },
-  { slug: 'lead-gen',           name: 'Nina',    label: 'Lead Generation',    emoji: '🎯' },
-  { slug: 'cold-outreach',      name: 'Victor',  label: 'Cold Outreach',      emoji: '📧' },
-  { slug: 'closer',             name: 'Rafael',  label: 'Sales Closer',       emoji: '🤝' },
+// ─── Agents par secteur ───────────────────────────────────────────────────────
+
+const AGENT_SECTORS = [
+  {
+    id: 'marketing',
+    label: 'Marketing & Social',
+    emoji: '📣',
+    agents: [
+      { slug: 'social-strategist',  name: 'Sophie',    label: 'Social Strategist',       emoji: '📅' },
+      { slug: 'lea',                name: 'Léa',       label: 'Senior Copywriter',       emoji: '✍️' },
+      { slug: 'mia',                name: 'Mia',       label: 'Creative Director',       emoji: '🎨' },
+      { slug: 'video-scriptwriter', name: 'Camille',   label: 'Video Scriptwriter',      emoji: '🎬' },
+      { slug: 'ugc-creator',        name: 'Jade',      label: 'UGC Creator',             emoji: '📱' },
+      { slug: 'youtube-strategist', name: 'Sam',       label: 'YouTube Strategist',      emoji: '▶️' },
+      { slug: 'ads-manager',        name: 'Max',       label: 'Ads Manager',             emoji: '📢' },
+      { slug: 'seo-specialist',     name: 'Lena',      label: 'SEO Specialist',          emoji: '🔎' },
+      { slug: 'lead-gen',           name: 'Nina',      label: 'Lead Generation',         emoji: '🎯' },
+      { slug: 'cold-outreach',      name: 'Victor',    label: 'Cold Outreach',           emoji: '📧' },
+      { slug: 'closer',             name: 'Rafael',    label: 'Sales Closer',            emoji: '🤝' },
+      { slug: 'noam',               name: 'Oumara',    label: 'CEO / Stratège',          emoji: '👑' },
+      { slug: 'brand-voice',        name: 'Élise',     label: 'Brand Voice',             emoji: '🗣️' },
+      { slug: 'community-manager',  name: 'Zoé',       label: 'Community Manager',       emoji: '💬' },
+      { slug: 'influencer-coord',   name: 'Léonie',    label: 'Influencer Coordinator',  emoji: '🌟' },
+      { slug: 'email-marketer',     name: 'Théodore',  label: 'Email Marketer',          emoji: '📩' },
+    ],
+  },
+  {
+    id: 'architecture',
+    label: 'Cabinet Architecture',
+    emoji: '🏛️',
+    agents: [
+      { slug: 'arch-brief',        name: 'Alexandre', label: 'Analyse Brief',           emoji: '📋' },
+      { slug: 'arch-urbanism',     name: 'Sophie',    label: 'Contraintes Urba.',       emoji: '⚖️' },
+      { slug: 'arch-concept',      name: 'Mathieu',   label: 'Concepts Archi.',         emoji: '🏛️' },
+      { slug: 'arch-costs',        name: 'Isabelle',  label: 'Estimation Coûts',        emoji: '💰' },
+      { slug: 'arch-risks',        name: 'Thomas',    label: 'Analyse Risques',         emoji: '⚠️' },
+      { slug: 'arch-presentation', name: 'Claire',    label: 'Présentation Client',     emoji: '🎨' },
+      { slug: 'arch-planning',     name: 'Paul',      label: 'Planning Équipe',         emoji: '📅' },
+    ],
+  },
+  {
+    id: 'plombier',
+    label: 'Artisan Plombier',
+    emoji: '🔧',
+    agents: [
+      { slug: 'plomb-intake',   name: 'Emma',   label: 'Réception & Questions',   emoji: '📞' },
+      { slug: 'plomb-qualify',  name: 'Lucas',  label: 'Qualification Urgence',   emoji: '🚨' },
+      { slug: 'plomb-schedule', name: 'Léa',    label: 'Agenda & RDV',            emoji: '📅' },
+      { slug: 'plomb-confirm',  name: 'Hugo',   label: 'Confirmations',           emoji: '✉️' },
+      { slug: 'plomb-quote',    name: 'Marie',  label: 'Devis Préliminaire',      emoji: '📄' },
+      { slug: 'plomb-followup', name: 'Pierre', label: 'Relance Post-Intervention',emoji: '🔄' },
+      { slug: 'plomb-review',   name: 'Ana',    label: 'Demande Avis',            emoji: '⭐' },
+      { slug: 'plomb-invoice',  name: 'Marc',   label: 'Facturation',             emoji: '🧾' },
+    ],
+  },
+  {
+    id: 'electricien',
+    label: 'Artisan Électricien',
+    emoji: '⚡',
+    agents: [
+      { slug: 'elec-intake',   name: 'Nicolas', label: 'Collecte Infos',          emoji: '📝' },
+      { slug: 'elec-diagnose', name: 'Julie',   label: 'Diagnostic',              emoji: '🔍' },
+      { slug: 'elec-estimate', name: 'Romain',  label: 'Estimation',              emoji: '⏱️' },
+      { slug: 'elec-assign',   name: 'Camille', label: 'Affectation Technicien',  emoji: '👷' },
+      { slug: 'elec-book',     name: 'Alexis',  label: 'Réservation Créneau',     emoji: '🗓️' },
+      { slug: 'elec-sheet',    name: 'Laura',   label: "Fiche d'Intervention",    emoji: '📋' },
+    ],
+  },
+  {
+    id: 'business-local',
+    label: 'Business Local IA',
+    emoji: '🏪',
+    agents: [
+      { slug: 'biz-standard', name: 'Sofia',  label: 'Standard IA 24/7',        emoji: '📱' },
+      { slug: 'biz-rdv',      name: 'Théo',   label: 'Prise de RDV Auto',       emoji: '🗓️' },
+      { slug: 'biz-qualify',  name: 'Nadia',  label: 'Qualification Prospects', emoji: '🎯' },
+      { slug: 'biz-quote',    name: 'Éric',   label: 'Génération Devis',        emoji: '💼' },
+      { slug: 'biz-followup', name: 'Chloé',  label: 'Relances & Suivi',        emoji: '🔄' },
+    ],
+  },
 ]
 
-const PLATFORMS = ['Instagram', 'LinkedIn', 'TikTok', 'YouTube', 'Twitter/X', 'Facebook', 'Email', 'Blog']
+// Flat list for backward-compat with calendar event lookup
+const CALENDAR_AGENTS = AGENT_SECTORS.flatMap((s) => s.agents)
 
-const AGENT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'social-strategist':  { bg: '#00D4AA18', text: '#00D4AA', border: '#00D4AA40' },
-  'lea':                { bg: '#A78BFA18', text: '#A78BFA', border: '#A78BFA40' },
-  'mia':                { bg: '#F472B618', text: '#F472B6', border: '#F472B640' },
-  'video-scriptwriter': { bg: '#60A5FA18', text: '#60A5FA', border: '#60A5FA40' },
-  'ugc-creator':        { bg: '#FCD34D18', text: '#FCD34D', border: '#FCD34D40' },
-  'youtube-strategist': { bg: '#F8717118', text: '#F87171', border: '#F8717140' },
-  'ads-manager':        { bg: '#FB923C18', text: '#FB923C', border: '#FB923C40' },
-  'seo-specialist':     { bg: '#34D39918', text: '#34D399', border: '#34D39940' },
-  'lead-gen':           { bg: '#38BDF818', text: '#38BDF8', border: '#38BDF840' },
-  'cold-outreach':      { bg: '#818CF818', text: '#818CF8', border: '#818CF840' },
-  'closer':             { bg: '#00D4AA18', text: '#00D4AA', border: '#00D4AA40' },
-}
+const PLATFORMS = ['Instagram', 'LinkedIn', 'TikTok', 'YouTube', 'Twitter/X', 'Facebook', 'WhatsApp', 'Telegram', 'Email', 'Notion', 'Blog']
+
+// Generate colors deterministically from a palette
+const COLOR_PALETTE = [
+  { bg: '#00D4AA18', text: '#00D4AA', border: '#00D4AA40' },
+  { bg: '#A78BFA18', text: '#A78BFA', border: '#A78BFA40' },
+  { bg: '#F472B618', text: '#F472B6', border: '#F472B640' },
+  { bg: '#60A5FA18', text: '#60A5FA', border: '#60A5FA40' },
+  { bg: '#FCD34D18', text: '#FCD34D', border: '#FCD34D40' },
+  { bg: '#F8717118', text: '#F87171', border: '#F8717140' },
+  { bg: '#FB923C18', text: '#FB923C', border: '#FB923C40' },
+  { bg: '#34D39918', text: '#34D399', border: '#34D39940' },
+  { bg: '#38BDF818', text: '#38BDF8', border: '#38BDF840' },
+  { bg: '#818CF818', text: '#818CF8', border: '#818CF840' },
+  { bg: '#E879F918', text: '#E879F9', border: '#E879F940' },
+  { bg: '#6EE7B718', text: '#6EE7B7', border: '#6EE7B740' },
+]
+
+const AGENT_COLORS: Record<string, { bg: string; text: string; border: string }> = Object.fromEntries(
+  CALENDAR_AGENTS.map((a, i) => [a.slug, COLOR_PALETTE[i % COLOR_PALETTE.length]])
+)
 
 const DEFAULT_COLOR = { bg: '#FFFFFF10', text: '#A8B5AF', border: '#1E3028' }
 
@@ -386,7 +463,7 @@ export function CalendarClient() {
           + Planifier maintenant
         </button>
 
-        {/* Agent filter */}
+        {/* Agent filter — organized by sector */}
         <div>
           <p className="text-[10px] font-bold text-cascade-muted uppercase tracking-widest mb-2">Agents</p>
           <div className="flex flex-col gap-0.5">
@@ -400,21 +477,30 @@ export function CalendarClient() {
             >
               Tous les agents
             </button>
-            {CALENDAR_AGENTS.map((a) => {
-              const c = AGENT_COLORS[a.slug] ?? DEFAULT_COLOR
-              const active = filterAgent === a.slug
-              return (
-                <button
-                  key={a.slug}
-                  onClick={() => setFilterAgent(active ? 'all' : a.slug)}
-                  className="text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-                  style={active ? { backgroundColor: c.bg, color: c.text, border: `1px solid ${c.border}` } : { color: '#6B7B74' }}
-                >
-                  <span>{a.emoji}</span>
-                  <span className="truncate">{a.name}</span>
-                </button>
-              )
-            })}
+            {AGENT_SECTORS.map((sector) => (
+              <div key={sector.id} className="mt-2">
+                <p className="text-[9px] font-bold text-cascade-muted/60 uppercase tracking-wider px-2.5 mb-1 flex items-center gap-1">
+                  <span>{sector.emoji}</span>
+                  <span>{sector.label}</span>
+                </p>
+                {sector.agents.map((a) => {
+                  const c = AGENT_COLORS[a.slug] ?? DEFAULT_COLOR
+                  const active = filterAgent === a.slug
+                  return (
+                    <button
+                      key={a.slug}
+                      onClick={() => setFilterAgent(active ? 'all' : a.slug)}
+                      className="text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 w-full"
+                      style={active ? { backgroundColor: c.bg, color: c.text, border: `1px solid ${c.border}` } : { color: '#6B7B74' }}
+                    >
+                      <span>{a.emoji}</span>
+                      <span className="truncate">{a.name}</span>
+                      <span className="ml-auto text-[9px] opacity-50 truncate hidden">{a.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -555,22 +641,29 @@ export function CalendarClient() {
           })}
         </div>
 
-        {/* Legend */}
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
-          {CALENDAR_AGENTS.map((a) => {
-            const c = AGENT_COLORS[a.slug] ?? DEFAULT_COLOR
-            return (
-              <button
-                key={a.slug}
-                onClick={() => setFilterAgent(filterAgent === a.slug ? 'all' : a.slug)}
-                className="flex items-center gap-1.5 transition-opacity"
-                style={{ opacity: filterAgent !== 'all' && filterAgent !== a.slug ? 0.3 : 1 }}
-              >
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.text }} />
-                <span className="text-[10px] text-cascade-muted">{a.emoji} {a.name}</span>
-              </button>
-            )
-          })}
+        {/* Legend — grouped by sector */}
+        <div className="mt-4 space-y-2">
+          {AGENT_SECTORS.map((sector) => (
+            <div key={sector.id}>
+              <p className="text-[9px] text-cascade-muted/50 uppercase tracking-wider mb-1">{sector.emoji} {sector.label}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {sector.agents.map((a) => {
+                  const c = AGENT_COLORS[a.slug] ?? DEFAULT_COLOR
+                  return (
+                    <button
+                      key={a.slug}
+                      onClick={() => setFilterAgent(filterAgent === a.slug ? 'all' : a.slug)}
+                      className="flex items-center gap-1.5 transition-opacity"
+                      style={{ opacity: filterAgent !== 'all' && filterAgent !== a.slug ? 0.3 : 1 }}
+                    >
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.text }} />
+                      <span className="text-[10px] text-cascade-muted">{a.emoji} {a.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </main>
 
