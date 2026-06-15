@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { PLAN_LIMITS } from '@/lib/limits'
 import { NavBar } from '@/components/NavBar'
 import { BillingClient } from './BillingClient'
 
@@ -20,11 +21,6 @@ export default async function BillingPage({
     .select('plan, stripe_customer_id, cascade_count_this_month, billing_period_start')
     .eq('id', userId)
     .single()
-
-  const PLAN_LIMITS = {
-    starter: { cascades: 30 },
-    agency: { cascades: 100 },
-  }
 
   const plan = (user?.plan ?? 'starter') as 'starter' | 'agency'
   const limits = PLAN_LIMITS[plan]
