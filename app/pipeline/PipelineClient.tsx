@@ -726,6 +726,43 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     typeof window !== 'undefined' ? (localStorage.getItem('cascade_ceo_name') || '') : ''
   )
 
+  // Multi-client workspace
+  const [clients, setClients] = useState<{ id: string; name: string; company_context: string | null }[]>([])
+  const [selectedClientId, setSelectedClientId] = useState<string>('')
+  const [showNewClient, setShowNewClient] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientContext, setNewClientContext] = useState('')
+  const [clientSaving, setClientSaving] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/workspace/clients')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: { id: string; name: string; company_context: string | null }[]) => setClients(data))
+      .catch(() => null)
+  }, [])
+
+  const saveNewClient = useCallback(async () => {
+    if (!newClientName.trim()) return
+    setClientSaving(true)
+    try {
+      const res = await fetch('/api/workspace/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newClientName.trim(), company_context: newClientContext.trim() || null }),
+      })
+      if (res.ok) {
+        const client = await res.json() as { id: string; name: string; company_context: string | null }
+        setClients((prev) => [...prev, client])
+        setSelectedClientId(client.id)
+        setShowNewClient(false)
+        setNewClientName('')
+        setNewClientContext('')
+      }
+    } finally {
+      setClientSaving(false)
+    }
+  }, [newClientName, newClientContext])
+
   // History filter (Sprint 1)
   const [historyFilter, setHistoryFilter] = useState<'all' | 'running' | 'done' | 'failed'>('all')
   const [historySearch, setHistorySearch] = useState('')
@@ -1034,7 +1071,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       const res = await fetch('/api/pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief: finalBrief, pipelineType: selectedPipelineType }),
+        body: JSON.stringify({ brief: finalBrief, pipelineType: selectedPipelineType, clientId: selectedClientId || undefined }),
       })
 
       if (!res.ok) {
@@ -1879,6 +1916,57 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                   />
                 </div>
               )}
+
+              {/* Client switcher */}
+              <div className="border-t border-cascade-border pt-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider flex-shrink-0">Client</span>
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    className="flex-1 bg-cascade-surface-2 border border-cascade-border rounded-lg px-2 py-1.5 text-cascade-text text-xs outline-none focus:border-cascade-teal/60 transition-colors"
+                  >
+                    <option value="">— Global (contexte intégrations) —</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewClient((v) => !v)}
+                    title="Nouveau client"
+                    className="text-cascade-muted hover:text-cascade-teal text-lg leading-none px-1 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                {showNewClient && (
+                  <div className="rounded-lg border border-cascade-border bg-cascade-surface-2 p-3 space-y-2">
+                    <input
+                      type="text"
+                      value={newClientName}
+                      onChange={(e) => setNewClientName(e.target.value)}
+                      placeholder="Nom du client"
+                      className="w-full bg-cascade-surface border border-cascade-border rounded-lg px-3 py-1.5 text-cascade-text text-xs outline-none focus:border-cascade-teal/60 transition-colors placeholder:text-cascade-muted"
+                    />
+                    <textarea
+                      value={newClientContext}
+                      onChange={(e) => setNewClientContext(e.target.value)}
+                      placeholder="Contexte entreprise (optionnel) — marque, secteur, ton…"
+                      rows={3}
+                      className="w-full bg-cascade-surface border border-cascade-border rounded-lg px-3 py-1.5 text-cascade-text text-xs outline-none focus:border-cascade-teal/60 transition-colors placeholder:text-cascade-muted resize-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={!newClientName.trim() || clientSaving}
+                      onClick={saveNewClient}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-cascade-teal/10 border border-cascade-teal/30 text-cascade-teal hover:bg-cascade-teal/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {clientSaving ? 'Création…' : 'Créer le client'}
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={launchPipeline}

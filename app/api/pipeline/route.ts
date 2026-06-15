@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     })
   }
 
-  let body: { brief: string; pipelineType?: string }
+  let body: { brief: string; pipelineType?: string; clientId?: string }
   try {
     body = await req.json()
   } catch {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     })
   }
 
-  const { brief, pipelineType = DEFAULT_PIPELINE } = body
+  const { brief, pipelineType = DEFAULT_PIPELINE, clientId } = body
   if (!brief?.trim()) {
     return new Response(JSON.stringify({ error: 'brief is required' }), {
       status: 400,
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   // Create pipeline_run row
   const { data: run, error: runError } = await supabaseAdmin
     .from('pipeline_runs')
-    .insert({ user_id: userId, brief, status: 'running', pipeline_type: resolvedType })
+    .insert({ user_id: userId, brief, status: 'running', pipeline_type: resolvedType, ...(clientId ? { client_id: clientId } : {}) })
     .select('id')
     .single()
 

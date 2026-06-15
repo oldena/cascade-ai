@@ -2,7 +2,8 @@ import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { fireOutboundWebhooks } from '@/lib/outbound-webhooks'
-import { getPipelineSteps } from '@/lib/pipeline-definitions'
+import { getPipelineSteps, PIPELINE_DEFINITIONS } from '@/lib/pipeline-definitions'
+import { notifyPipelineComplete } from '@/lib/notify-pipeline'
 
 export async function POST(req: Request) {
   const { userId } = await auth()
@@ -22,10 +23,10 @@ export async function POST(req: Request) {
     return Response.json({ error: 'runId and stepOrder required' }, { status: 400 })
   }
 
-  // Verify ownership + fetch brief + pipeline type
+  // Verify ownership + fetch brief + pipeline type + optional client
   const { data: run } = await supabaseAdmin
     .from('pipeline_runs')
-    .select('brief, pipeline_type')
+    .select('brief, pipeline_type, client_id')
     .eq('id', runId)
     .eq('user_id', userId)
     .single()
@@ -40,13 +41,19 @@ export async function POST(req: Request) {
     return Response.json({ error: `Unknown stepOrder: ${stepOrder}` }, { status: 400 })
   }
 
-  // Fetch agent system prompt + company context in parallel
-  const [{ data: agent }, { data: companyRow }] = await Promise.all([
+  // Fetch agent system prompt + company context (client takes priority over global)
+  const clientId = (run as { client_id?: string | null }).client_id
+  const [{ data: agent }, { data: companyRow }, { data: clientRow }] = await Promise.all([
     supabaseAdmin.from('agents').select('system_prompt').eq('slug', step.slug).single(),
     supabaseAdmin.from('user_integrations').select('company_context').eq('user_id', userId).single(),
+    clientId
+      ? supabaseAdmin.from('clients').select('company_context').eq('id', clientId).single()
+      : Promise.resolve({ data: null }),
   ])
 
-  const companyCtx = (companyRow as { company_context?: string | null } | null)?.company_context
+  const companyCtx =
+    (clientRow as { company_context?: string | null } | null)?.company_context ||
+    (companyRow as { company_context?: string | null } | null)?.company_context
   const basePrompt = agent?.system_prompt ?? `You are ${step.name}, a specialist AI agent.`
   const companyBlock = companyCtx ? `\n\nCONTEXTE CLIENT:\n${companyCtx}\n` : ''
   const systemPrompt = `${basePrompt}${companyBlock}
@@ -166,6 +173,8 @@ OUTPUT REQUIREMENTS (mandatory for every response):
         const isLast = stepOrder === PIPELINE_STEPS.length - 1
         if (isLast) {
           await supabaseAdmin.from('pipeline_runs').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', runId)
+          const pipelineName = PIPELINE_DEFINITIONS[run.pipeline_type ?? 'marketing-general']?.name ?? run.pipeline_type ?? 'Pipeline'
+          notifyPipelineComplete(userId, pipelineName, runId).catch(console.error)
           fireOutboundWebhooks(userId, 'pipeline.completed', {
             run_id: runId,
             user_id: userId,
