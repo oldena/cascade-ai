@@ -45,6 +45,12 @@ export function NavBar() {
             Analytics
           </Link>
           <Link
+            href="/clients"
+            className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
+          >
+            Clients
+          </Link>
+          <Link
             href="/history"
             className="text-cascade-text-2 hover:text-cascade-text transition-colors text-sm"
           >
