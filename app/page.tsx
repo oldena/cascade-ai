@@ -306,8 +306,8 @@ export default async function HomePage() {
             <div className="text-4xl font-bold text-cascade-text mb-1">€29<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
             <p className="text-xs text-cascade-text-2 mb-6">Idéal pour les indépendants</p>
             <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
-              <li>✓ 30 cascades / mois</li>
-              <li>✓ 2 profils clients</li>
+              <li>✓ 50 cascades / mois</li>
+              <li>✓ 3 profils clients</li>
               <li>✓ Export PDF</li>
               <li>✓ Partage par lien</li>
             </ul>
@@ -318,11 +318,11 @@ export default async function HomePage() {
           <div className="bg-cascade-teal/10 border border-cascade-teal rounded-2xl p-6 flex flex-col relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cascade-teal text-white text-xs font-semibold px-3 py-1 rounded-full">Populaire</div>
             <div className="text-sm font-medium text-cascade-teal mb-2">Agency</div>
-            <div className="text-4xl font-bold text-cascade-text mb-1">€79<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
+            <div className="text-4xl font-bold text-cascade-text mb-1">€99<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
             <p className="text-xs text-cascade-text-2 mb-6">Pour les agences et équipes</p>
             <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
-              <li>✓ 100 cascades / mois</li>
-              <li>✓ 5 profils clients</li>
+              <li>✓ 200 cascades / mois</li>
+              <li>✓ 20 profils clients</li>
               <li>✓ 6 intégrations (Metricool, Meta, Notion…)</li>
               <li>✓ Coût IA visible par étape</li>
               <li>✓ Favoris et templates de brief</li>
