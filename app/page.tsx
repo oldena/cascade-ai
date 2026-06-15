@@ -300,7 +300,7 @@ export default async function HomePage() {
       <section id="tarifs" className="max-w-6xl mx-auto px-6 py-20">
         <h2 className="text-2xl font-bold text-center mb-3">Tarifs simples, sans surprise</h2>
         <p className="text-cascade-text-2 text-center text-sm mb-12">7 jours d'essai gratuit — aucune carte requise</p>
-        <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <div className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 flex flex-col">
             <div className="text-sm font-medium text-cascade-text-2 mb-2">Starter</div>
             <div className="text-4xl font-bold text-cascade-text mb-1">€29<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
@@ -310,6 +310,21 @@ export default async function HomePage() {
               <li>✓ 3 profils clients</li>
               <li>✓ Export PDF</li>
               <li>✓ Partage par lien</li>
+            </ul>
+            <Link href="/sign-up" className="block text-center bg-cascade-surface border border-cascade-teal text-cascade-teal px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-cascade-teal hover:text-white transition-colors">
+              Essai gratuit 7 jours
+            </Link>
+          </div>
+          <div className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 flex flex-col">
+            <div className="text-sm font-medium text-cascade-text-2 mb-2">Pro</div>
+            <div className="text-4xl font-bold text-cascade-text mb-1">€49<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
+            <p className="text-xs text-cascade-text-2 mb-6">Freelances et petites agences</p>
+            <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
+              <li>✓ 80 cascades / mois</li>
+              <li>✓ 8 profils clients</li>
+              <li>✓ Export PDF</li>
+              <li>✓ Partage par lien</li>
+              <li>✓ 2 intégrations</li>
             </ul>
             <Link href="/sign-up" className="block text-center bg-cascade-surface border border-cascade-teal text-cascade-teal px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-cascade-teal hover:text-white transition-colors">
               Essai gratuit 7 jours
