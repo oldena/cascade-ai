@@ -1,6 +1,7 @@
 import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { fireOutboundWebhooks } from '@/lib/outbound-webhooks'
 import { getPipelineSteps, PIPELINE_DEFINITIONS } from '@/lib/pipeline-definitions'
 import { notifyPipelineComplete } from '@/lib/notify-pipeline'
@@ -9,6 +10,14 @@ export async function POST(req: Request) {
   const { userId } = await auth()
   if (!userId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl = checkRateLimit(userId)
+  if (!rl.allowed) {
+    return Response.json(
+      { error: `Trop de requêtes. Réessayez dans ${Math.ceil(rl.resetInMs / 1000)}s.` },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetInMs / 1000)) } },
+    )
   }
 
   let body: { runId: string; stepOrder: number; language?: string }
@@ -143,6 +152,7 @@ OUTPUT REQUIREMENTS (mandatory for every response):
 
   const encoder = new TextEncoder()
   let fullOutput = ''
+  let stepUsage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null = null
 
   const stream = new ReadableStream({
     async start(ctrl) {
@@ -159,11 +169,17 @@ OUTPUT REQUIREMENTS (mandatory for every response):
             const data = trimmed.slice(6)
             if (data === '[DONE]') continue
             try {
-              const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> }
+              const parsed = JSON.parse(data) as {
+                choices?: Array<{ delta?: { content?: string }; finish_reason?: string }>
+                usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+              }
               const content = parsed.choices?.[0]?.delta?.content ?? ''
               if (content) {
                 fullOutput += content
                 ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+              }
+              if (parsed.usage) {
+                stepUsage = parsed.usage
               }
             } catch { /* malformed SSE line */ }
           }
@@ -182,7 +198,7 @@ OUTPUT REQUIREMENTS (mandatory for every response):
             created_at: new Date().toISOString(),
           }).catch(console.error)
         }
-        ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, isLast })}\n\n`))
+        ctrl.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, isLast, usage: stepUsage })}\n\n`))
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         await supabaseAdmin.from('pipeline_steps').update({ status: 'failed', output: msg, updated_at: new Date().toISOString() }).eq('run_id', runId).eq('step_order', stepOrder)

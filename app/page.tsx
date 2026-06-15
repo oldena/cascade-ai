@@ -41,6 +41,64 @@ const AGENTS = [
 
 const FORMATS = ['LinkedIn', 'Carrousel', 'Emails', 'Reels', 'Twitter', 'Newsletter']
 
+const TESTIMONIALS = [
+  {
+    name: 'Sarah M.',
+    role: 'Directrice Marketing · Agence Bloom',
+    avatar: '👩‍💼',
+    color: '#00b4b4',
+    quote: 'En 10 minutes, Cascade m\'a sorti une stratégie LinkedIn + 3 emails + un script vidéo. Ce qui prenait 2 jours à mon équipe.',
+  },
+  {
+    name: 'Karim B.',
+    role: 'Fondateur · E-commerce Mode',
+    avatar: '🧑‍💻',
+    color: '#f97316',
+    quote: 'J\'ai lancé ma collection capsule avec zéro agence. Cascade a tout généré : posts, newsletter, scripts reels. ROI immédiat.',
+  },
+  {
+    name: 'Lucie D.',
+    role: 'Growth Manager · SaaS B2B',
+    avatar: '👩‍🚀',
+    color: '#a855f7',
+    quote: 'On a multiplié notre output de contenu par 8 sans recruter. Les agents comprennent vraiment le positionnement B2B.',
+  },
+  {
+    name: 'Thomas R.',
+    role: 'CEO · Agence digitale 12 personnes',
+    avatar: '👨‍💼',
+    color: '#22c55e',
+    quote: 'On a onboardé 4 nouveaux clients en un mois grâce à Cascade. La vitesse d\'exécution est incomparable.',
+  },
+]
+
+const FAQ = [
+  {
+    q: 'Combien de temps faut-il pour générer une campagne ?',
+    a: 'Entre 3 et 8 minutes selon la complexité du pipeline choisi. Les agents travaillent en séquence et vous voyez le résultat se construire en temps réel.',
+  },
+  {
+    q: 'Puis-je utiliser Cascade pour plusieurs clients ?',
+    a: 'Oui. Chaque profil client a son propre contexte (ton, positionnement, exemples). Les agents s\'adaptent automatiquement au client sélectionné.',
+  },
+  {
+    q: 'Les contenus sont-ils en français ?',
+    a: 'Par défaut oui. Vous pouvez changer la langue de sortie (anglais, espagnol, etc.) depuis les paramètres du pipeline avant de lancer.',
+  },
+  {
+    q: 'Quelle différence avec ChatGPT ou d\'autres outils ?',
+    a: 'Cascade orchestre 18 agents spécialisés qui travaillent en séquence — chacun enrichit le travail du précédent. Ce n\'est pas un chat, c\'est une équipe IA complète avec un workflow structuré.',
+  },
+  {
+    q: 'Puis-je publier directement depuis Cascade ?',
+    a: 'Oui. Cascade est connecté à Metricool (planification) et Meta Ads (campagnes). D\'autres intégrations sont en cours (LinkedIn, Notion, WhatsApp).',
+  },
+  {
+    q: 'L\'essai gratuit inclut-il toutes les fonctionnalités ?',
+    a: '7 jours d\'accès complet au plan Agency — tous les pipelines, toutes les intégrations, sans carte bancaire requise.',
+  },
+]
+
 const STEPS = [
   {
     n: '1',
@@ -75,6 +133,12 @@ export default async function HomePage() {
               className="hidden sm:block text-sm text-cascade-text-2 hover:text-cascade-text transition-colors"
             >
               Comment ça marche
+            </Link>
+            <Link
+              href="#faq"
+              className="hidden sm:block text-sm text-cascade-text-2 hover:text-cascade-text transition-colors"
+            >
+              FAQ
             </Link>
             <Link href="/sign-in" className="text-sm text-cascade-text-2 hover:text-cascade-text transition-colors">
               Connexion
@@ -211,6 +275,53 @@ export default async function HomePage() {
             <a href="mailto:contact@cascadeai.fr" className="block text-center bg-cascade-surface border border-cascade-border text-cascade-text-2 px-4 py-2.5 rounded-lg text-sm font-medium hover:text-cascade-text hover:border-cascade-text transition-colors">
               Contacter l'équipe →
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <h2 className="text-2xl font-bold text-center mb-3">Ce que disent nos clients</h2>
+        <p className="text-cascade-text-2 text-center text-sm mb-12">Des agences et marques qui ont transformé leur marketing</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {TESTIMONIALS.map((t) => (
+            <div key={t.name} className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0" style={{ backgroundColor: t.color + '33' }}>
+                  {t.avatar}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-cascade-text">{t.name}</div>
+                  <div className="text-xs text-cascade-muted">{t.role}</div>
+                </div>
+              </div>
+              <p className="text-sm text-cascade-text-2 leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className="text-cascade-teal text-sm">★</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="bg-cascade-surface border-y border-cascade-border py-20">
+        <div className="max-w-3xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-center mb-12">Questions fréquentes</h2>
+          <div className="space-y-4">
+            {FAQ.map((item) => (
+              <details key={item.q} className="group border border-cascade-border rounded-xl bg-cascade-bg overflow-hidden">
+                <summary className="flex items-center justify-between px-6 py-4 cursor-pointer list-none text-sm font-medium text-cascade-text hover:text-cascade-teal transition-colors">
+                  {item.q}
+                  <span className="ml-4 flex-shrink-0 text-cascade-muted group-open:rotate-180 transition-transform duration-200">▾</span>
+                </summary>
+                <div className="px-6 pb-5 text-sm text-cascade-text-2 leading-relaxed border-t border-cascade-border pt-4">
+                  {item.a}
+                </div>
+              </details>
+            ))}
           </div>
         </div>
       </section>

@@ -82,6 +82,7 @@ function StepRow({
   publishStatus = 'idle',
   onSend,
   sendStatus = 'idle',
+  onRetry,
 }: {
   step: StepState
   onToggle: (slug: string) => void
@@ -98,6 +99,7 @@ function StepRow({
   publishStatus?: 'idle' | 'publishing' | 'done' | 'error'
   onSend?: (slug: string, content: string, channel: SendChannel, recipient: string) => void
   sendStatus?: 'idle' | 'sending' | 'done' | 'error'
+  onRetry?: (order: number) => void
 }) {
   const [sendOpen, setSendOpen] = useState(false)
   const [sendChannel, setSendChannel] = useState<SendChannel>('email')
@@ -265,7 +267,20 @@ function StepRow({
               {sendStatus === 'done' ? 'Envoyé ✓' : sendStatus === 'error' ? 'Erreur' : '↑ Envoyer'}
             </button>
           )}
-          {isFailed && <span className="text-xs text-cascade-red">Erreur</span>}
+          {isFailed && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-cascade-red">Erreur</span>
+              {onRetry && (
+                <button
+                  onClick={() => onRetry(step.order)}
+                  title="Relancer cet agent"
+                  className="text-xs px-2 py-0.5 rounded-md border border-cascade-red/40 text-cascade-red hover:bg-cascade-red/10 transition-colors"
+                >
+                  ↺ Réessayer
+                </button>
+              )}
+            </div>
+          )}
           {isPending && <span className="text-xs text-cascade-muted">En attente</span>}
         </div>
       </div>
@@ -726,6 +741,64 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     typeof window !== 'undefined' ? (localStorage.getItem('cascade_ceo_name') || '') : ''
   )
 
+  // Onboarding state
+  const isNewUser = recentRuns.length === 0
+
+  // Pipeline favorites (localStorage)
+  const [favPipelines, setFavPipelines] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(localStorage.getItem('cascade_fav_pipelines') ?? '[]') } catch { return [] }
+  })
+
+  const toggleFav = useCallback((id: string) => {
+    setFavPipelines((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      localStorage.setItem('cascade_fav_pipelines', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
+  // Sorted pipeline list: favorites first
+  const sortedPipelines = Object.values(PIPELINE_DEFINITIONS).sort((a, b) => {
+    const af = favPipelines.includes(a.id) ? 0 : 1
+    const bf = favPipelines.includes(b.id) ? 0 : 1
+    return af - bf
+  })
+
+  // Brief quality score
+  type BriefScore = { score: number; label: string; suggestions: string[] }
+  const [briefScore, setBriefScore] = useState<BriefScore | null>(null)
+  const [briefScoreLoading, setBriefScoreLoading] = useState(false)
+  const [showScoreModal, setShowScoreModal] = useState(false)
+
+  // Cost tracking (tokens per run)
+  const [runTokens, setRunTokens] = useState<{ input: number; output: number }>({ input: 0, output: 0 })
+
+  // Brief templates (localStorage)
+  type BriefTemplate = { id: string; name: string; brief: string; pipelineType: string }
+  const [templates, setTemplates] = useState<BriefTemplate[]>(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(localStorage.getItem('cascade_brief_templates') ?? '[]') } catch { return [] }
+  })
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+
+  const saveTemplate = useCallback(() => {
+    if (!brief.trim() || !templateName.trim()) return
+    const next: BriefTemplate = { id: Date.now().toString(), name: templateName.trim(), brief, pipelineType: selectedPipelineType }
+    const updated = [...templates, next]
+    setTemplates(updated)
+    localStorage.setItem('cascade_brief_templates', JSON.stringify(updated))
+    setTemplateName('')
+    setShowSaveTemplate(false)
+  }, [brief, templateName, templates, selectedPipelineType])
+
+  const deleteTemplate = useCallback((id: string) => {
+    const updated = templates.filter((t) => t.id !== id)
+    setTemplates(updated)
+    localStorage.setItem('cascade_brief_templates', JSON.stringify(updated))
+  }, [templates])
+
   // Multi-client workspace
   const [clients, setClients] = useState<{ id: string; name: string; company_context: string | null }[]>([])
   const [selectedClientId, setSelectedClientId] = useState<string>('')
@@ -942,6 +1015,10 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
           }
           if (parsed.done) {
             setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'done' } : s))
+            if ((parsed as { usage?: { prompt_tokens?: number; completion_tokens?: number } }).usage) {
+              const u = (parsed as { usage: { prompt_tokens: number; completion_tokens: number } }).usage
+              setRunTokens((prev) => ({ input: prev.input + u.prompt_tokens, output: prev.output + u.completion_tokens }))
+            }
           }
         } catch { /* malformed */ }
       }
@@ -1059,10 +1136,36 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   // Launch pipeline
   // -------------------------------------------------------------------------
 
+  const checkBriefAndLaunch = useCallback(async () => {
+    const finalBrief = buildFinalBrief()
+    if (!finalBrief.trim()) return
+    setBriefScoreLoading(true)
+    setBriefScore(null)
+    try {
+      const res = await fetch('/api/brief-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief: finalBrief, pipelineType: selectedPipelineType }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { score: number; label: string; suggestions: string[] }
+        setBriefScore(data)
+        setBriefScoreLoading(false)
+        setShowScoreModal(true)
+        return
+      }
+    } catch { /* ignore, launch anyway */ }
+    setBriefScoreLoading(false)
+    void launchPipeline()
+  }, [buildFinalBrief, selectedPipelineType])
+
   const launchPipeline = useCallback(async () => {
+    setShowScoreModal(false)
+    setBriefScore(null)
     const finalBrief = buildFinalBrief()
     if (!finalBrief.trim()) return
     setError(null)
+    setRunTokens({ input: 0, output: 0 })
     setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
     setSseConnected(false)
     setMode('running')
@@ -1098,6 +1201,26 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
     }
   }, [buildFinalBrief, runSteps, selectedPipelineType])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && mode === 'brief') {
+        if (brief.trim() || attachedFile) {
+          e.preventDefault()
+          void checkBriefAndLaunch()
+        }
+      }
+      if (e.key === 'Escape') {
+        setShowScoreModal(false)
+        setViewingSlug(null)
+        setShareUrl(null)
+        setPublishModal(null)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [mode, brief, attachedFile, checkBriefAndLaunch])
 
   // -------------------------------------------------------------------------
   // Export all outputs to clipboard as markdown
@@ -1177,6 +1300,17 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'failed', output: msg } : s))
     }
   }, [currentRunId, consumeStepStream])
+
+  // Retry a failed step then resume pipeline from that point
+  const retryStep = useCallback(async (order: number) => {
+    if (!currentRunId) return
+    abortRef.current = false
+    try {
+      await runSteps(currentRunId, order)
+    } catch {
+      // runSteps handles its own error state
+    }
+  }, [currentRunId, runSteps])
 
   // -------------------------------------------------------------------------
   // Export PDF — opens a formatted HTML report in a new window for printing
@@ -1366,6 +1500,9 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     setTone('')
     setFeedback({})
     setShareUrl(null)
+    setRunTokens({ input: 0, output: 0 })
+    setBriefScore(null)
+    setShowScoreModal(false)
     setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
     setError(null)
     setSseConnected(false)
@@ -1417,6 +1554,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const loadRun = useCallback(async (run: PipelineRun) => {
     setBrief(run.brief)
     setSidebarOpen(false)
+    setCurrentRunId(run.id)
     setMode(run.status === 'done' ? 'done' : 'brief')
 
     // Fetch real step outputs
@@ -1674,26 +1812,85 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               </p>
             </div>
 
+            {/* Onboarding card — shown only on first visit (0 runs) */}
+            {isNewUser && (
+              <div className="rounded-2xl border border-cascade-teal/30 bg-cascade-teal/5 p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👋</span>
+                  <div>
+                    <p className="text-sm font-bold text-cascade-text">Bienvenue sur Cascade AI !</p>
+                    <p className="text-xs text-cascade-text-2 mt-0.5">3 étapes pour lancer votre première campagne</p>
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cascade-teal/20 border border-cascade-teal/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-cascade-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="text-xs font-medium text-cascade-text">Compte créé</p>
+                      <p className="text-[11px] text-cascade-muted">Vous êtes connecté et prêt</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cascade-surface-2 border border-cascade-border flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] text-cascade-muted font-bold">2</span>
+                    <div>
+                      <p className="text-xs font-medium text-cascade-text">
+                        <a href="/integrations" className="text-cascade-teal hover:underline">Configurez votre contexte entreprise →</a>
+                      </p>
+                      <p className="text-[11px] text-cascade-muted">Décrivez votre marque pour personnaliser tous les agents</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cascade-surface-2 border border-cascade-border flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] text-cascade-muted font-bold">3</span>
+                    <div>
+                      <p className="text-xs font-medium text-cascade-text">Lancez votre premier pipeline</p>
+                      <p className="text-[11px] text-cascade-muted">Choisissez un type ci-dessous, rédigez votre brief, appuyez sur <kbd className="px-1 py-0.5 rounded bg-cascade-surface-2 border border-cascade-border text-[10px] font-mono">⌘ Entrée</kbd></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Pipeline type selector */}
             <div className="space-y-2">
-              <p className="text-xs text-cascade-muted font-medium uppercase tracking-wider">Type de Pipeline</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-cascade-muted font-medium uppercase tracking-wider">Type de Pipeline</p>
+                {favPipelines.length > 0 && (
+                  <span className="text-[10px] text-cascade-muted">⭐ favoris en tête</span>
+                )}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Object.values(PIPELINE_DEFINITIONS).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedPipelineType(p.id)}
-                    className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                      selectedPipelineType === p.id
-                        ? 'border-cascade-teal bg-cascade-teal/10 text-cascade-teal'
-                        : 'border-cascade-border bg-cascade-surface-2 hover:border-cascade-teal/40 hover:bg-cascade-surface text-cascade-text-2'
-                    }`}
-                  >
-                    <span className="text-lg">{p.icon}</span>
-                    <span className="text-xs font-medium">{p.name}</span>
-                    <span className="text-[10px] text-cascade-muted line-clamp-2">{p.description}</span>
-                  </button>
-                ))}
+                {sortedPipelines.map((p) => {
+                  const isFav = favPipelines.includes(p.id)
+                  return (
+                    <div key={p.id} className="relative group">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPipelineType(p.id)}
+                        className={`w-full flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                          selectedPipelineType === p.id
+                            ? 'border-cascade-teal bg-cascade-teal/10 text-cascade-teal'
+                            : 'border-cascade-border bg-cascade-surface-2 hover:border-cascade-teal/40 hover:bg-cascade-surface text-cascade-text-2'
+                        }`}
+                      >
+                        <span className="text-lg">{p.icon}</span>
+                        <span className="text-xs font-medium">{p.name}</span>
+                        <span className="text-[10px] text-cascade-muted line-clamp-2">{p.description}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); toggleFav(p.id) }}
+                        title={isFav ? 'Retirer des favoris' : 'Épingler en favori'}
+                        className={`absolute top-1.5 right-1.5 text-[11px] opacity-0 group-hover:opacity-100 transition-opacity ${isFav ? 'opacity-100 text-yellow-400' : 'text-cascade-muted hover:text-yellow-400'}`}
+                      >
+                        {isFav ? '⭐' : '☆'}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -1752,6 +1949,56 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
 
             <div className="rounded-2xl border border-cascade-border bg-cascade-surface p-5 space-y-3">
 
+              {/* Brief templates */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {templates.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+                    <span className="text-[10px] text-cascade-muted uppercase tracking-wider flex-shrink-0">Modèles</span>
+                    {templates.map((t) => (
+                      <div key={t.id} className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => { setBrief(t.brief); setSelectedPipelineType(t.pipelineType) }}
+                          className="text-xs px-2.5 py-1 rounded-full border border-cascade-border text-cascade-text-2 hover:border-cascade-teal/40 hover:text-cascade-teal bg-cascade-surface-2 transition-colors"
+                        >
+                          {t.name}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteTemplate(t.id)}
+                          className="text-[10px] text-cascade-muted hover:text-cascade-red px-1 transition-colors"
+                          title="Supprimer"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {brief.trim() && !showSaveTemplate && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveTemplate(true)}
+                    className="text-[10px] text-cascade-muted hover:text-cascade-teal border border-dashed border-cascade-border hover:border-cascade-teal/40 px-2 py-1 rounded-full transition-colors ml-auto flex-shrink-0"
+                  >
+                    + Sauvegarder
+                  </button>
+                )}
+                {showSaveTemplate && (
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <input
+                      type="text"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveTemplate(); if (e.key === 'Escape') setShowSaveTemplate(false) }}
+                      placeholder="Nom du modèle…"
+                      autoFocus
+                      className="flex-1 text-xs bg-cascade-surface-2 border border-cascade-teal/40 rounded-lg px-2.5 py-1 text-cascade-text placeholder:text-cascade-muted focus:outline-none"
+                    />
+                    <button type="button" onClick={saveTemplate} className="text-xs text-cascade-teal hover:underline">Sauver</button>
+                    <button type="button" onClick={() => setShowSaveTemplate(false)} className="text-xs text-cascade-muted hover:text-cascade-text">Annuler</button>
+                  </div>
+                )}
+              </div>
+
               {/* Main textarea */}
               <textarea
                 value={brief}
@@ -1762,25 +2009,27 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               />
 
               {/* Language selector (Feature 11) */}
-              <div className="flex items-center gap-2 flex-wrap border-t border-cascade-border pt-3">
-                <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Langue</span>
-                {['Français', 'English', 'Español', 'Português', 'Norsk', 'Svenska', 'العربية', '中文'].map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLanguage(l)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${language === l ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal'}`}
-                  >
-                    {l}
-                  </button>
-                ))}
+              <div className="border-t border-cascade-border pt-3 space-y-2">
+                <span className="text-[10px] text-cascade-muted uppercase tracking-wider block">Langue de sortie</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Français', 'English', 'Español', 'Português', 'Norsk', 'Svenska', 'العربية', '中文'].map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLanguage(l)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${language === l ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' : 'border-cascade-border text-cascade-muted hover:border-cascade-teal/40 hover:text-cascade-teal'}`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Brief params (Feature 5) */}
               <div className="space-y-2.5 border-t border-cascade-border pt-3">
                 {/* Budget */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0">Budget</span>
+                <div className="flex items-start sm:items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-cascade-muted uppercase tracking-wider w-16 flex-shrink-0 pt-1 sm:pt-0">Budget</span>
                   {(['petit', 'moyen', 'grand'] as const).map((b) => (
                     <button
                       key={b}
@@ -1969,11 +2218,24 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
               </div>
 
               <button
-                onClick={launchPipeline}
-                disabled={!brief.trim() && !attachedFile}
-                className="w-full py-3 rounded-xl bg-cascade-red hover:bg-cascade-red-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-white font-semibold text-sm tracking-wide"
+                onClick={checkBriefAndLaunch}
+                disabled={(!brief.trim() && !attachedFile) || briefScoreLoading}
+                className="w-full py-3 rounded-xl bg-cascade-red hover:bg-cascade-red-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-white font-semibold text-sm tracking-wide flex items-center justify-center gap-2"
               >
-                Lancer le pipeline →
+                {briefScoreLoading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Analyse du brief…
+                  </>
+                ) : (
+                  <>
+                    Lancer le pipeline →
+                    <span className="hidden sm:inline text-white/50 text-xs font-normal ml-1">⌘ Entrée</span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -2162,6 +2424,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
                     publishStatus={publishStatus[step.agentSlug] ?? 'idle'}
                     onSend={handleSend}
                     sendStatus={sendStatus[step.agentSlug] ?? 'idle'}
+                    onRetry={retryStep}
                   />
                 </div>
               ))}
@@ -2173,6 +2436,95 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
       {/* Live view modal — shows running agent's output full-screen */}
       {viewStep && (
         <LiveViewModal step={viewStep} onClose={() => setViewingSlug(null)} />
+      )}
+
+      {/* Brief score modal */}
+      {showScoreModal && briefScore && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" onClick={() => setShowScoreModal(false)}>
+          <div className="w-full max-w-md rounded-2xl border border-cascade-border bg-cascade-surface p-6 space-y-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-cascade-text">✦ Qualité du brief</h2>
+              <button onClick={() => setShowScoreModal(false)} className="text-cascade-muted hover:text-cascade-text text-xl leading-none">×</button>
+            </div>
+
+            {/* Score gauge */}
+            <div className="flex items-center gap-4">
+              <div className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black border-4 ${
+                briefScore.score >= 8 ? 'border-cascade-teal text-cascade-teal bg-cascade-teal/10' :
+                briefScore.score >= 5 ? 'border-yellow-500 text-yellow-400 bg-yellow-500/10' :
+                'border-cascade-red text-cascade-red bg-cascade-red/10'
+              }`}>
+                {briefScore.score}
+              </div>
+              <div>
+                <p className={`text-base font-bold ${
+                  briefScore.score >= 8 ? 'text-cascade-teal' :
+                  briefScore.score >= 5 ? 'text-yellow-400' :
+                  'text-cascade-red'
+                }`}>{briefScore.label}</p>
+                <p className="text-xs text-cascade-muted mt-0.5">Score sur 10 — basé sur précision, contexte et objectif</p>
+              </div>
+            </div>
+
+            {/* Score bar */}
+            <div className="h-2 rounded-full bg-cascade-surface-2 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  briefScore.score >= 8 ? 'bg-cascade-teal' :
+                  briefScore.score >= 5 ? 'bg-yellow-500' :
+                  'bg-cascade-red'
+                }`}
+                style={{ width: `${briefScore.score * 10}%` }}
+              />
+            </div>
+
+            {/* Suggestions */}
+            {briefScore.suggestions.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] text-cascade-muted uppercase tracking-widest font-semibold">Améliorations suggérées</p>
+                {briefScore.suggestions.map((s, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-cascade-text-2">
+                    <span className="text-cascade-teal flex-shrink-0 mt-0.5">→</span>
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowScoreModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-cascade-border bg-cascade-surface-2 text-cascade-text-2 hover:text-cascade-text text-sm transition-colors"
+              >
+                Améliorer le brief
+              </button>
+              <button
+                onClick={launchPipeline}
+                className="flex-1 py-2.5 rounded-xl bg-cascade-red hover:bg-cascade-red-hover text-white font-semibold text-sm transition-colors"
+              >
+                Lancer quand même →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cost banner — shown after pipeline completes */}
+      {mode === 'done' && (runTokens.input > 0 || runTokens.output > 0) && (
+        <div className="fixed bottom-6 right-6 z-40 bg-cascade-surface border border-cascade-border rounded-xl px-4 py-3 shadow-2xl flex items-center gap-3 max-w-xs">
+          <span className="text-lg">💰</span>
+          <div>
+            <p className="text-xs font-semibold text-cascade-text">Coût estimé de ce run</p>
+            <p className="text-[11px] text-cascade-muted mt-0.5">
+              {(runTokens.input / 1000).toFixed(1)}k in · {(runTokens.output / 1000).toFixed(1)}k out
+              {' · '}
+              <span className="text-cascade-teal font-semibold">
+                ~${((runTokens.input * 0.0000002) + (runTokens.output * 0.0000006)).toFixed(4)}
+              </span>
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Publish error toast */}
