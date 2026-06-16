@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { NavBar } from '@/components/NavBar'
 import { PIPELINE_DEFINITIONS } from '@/lib/pipeline-definitions'
+import { RadialGauge } from '@/components/ui/RadialGauge'
 
 interface AgentStat {
   slug: string
@@ -195,9 +196,11 @@ export default async function AnalyticsPage() {
         {/* KPI cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Pipelines lancés" value={total} />
-          <StatCard label="Complétés" value={done} sub={`${completionRate}% de complétion`} />
           <StatCard label="Échoués" value={failed} sub={failed > 0 ? `${Math.round((failed / total) * 100)}% des runs` : undefined} />
           <StatCard label="Feedbacks" value={feedbackTotal} sub={feedbackTotal > 0 ? `👍 ${feedbackUp}  👎 ${feedbackDown}` : undefined} />
+          <div className="rounded-2xl border border-cascade-border bg-cascade-surface p-5 flex items-center justify-center">
+            <RadialGauge value={done} max={total || 1} label="Complétion" color="#18B081" size={84} />
+          </div>
         </div>
 
         {/* Sparkline */}

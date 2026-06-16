@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { RadialGauge } from '@/components/ui/RadialGauge'
 
 interface Props {
   plan: 'trial' | 'starter' | 'pro' | 'agency' | 'enterprise'
@@ -172,17 +173,22 @@ export function BillingClient({
         </div>
 
         {/* Usage */}
-        <div className="mb-2 flex justify-between text-sm">
-          <span className="text-cascade-muted">Cascades this billing period</span>
-          <span className="text-white">
-            {cascadeCount} / {cascadeLimit}
-          </span>
-        </div>
-        <div className="w-full bg-cascade-dark rounded-full h-2">
-          <div
-            className="bg-cascade-red h-2 rounded-full transition-all"
-            style={{ width: `${usagePercent}%` }}
-          />
+        <div className="flex items-center gap-6">
+          <RadialGauge value={cascadeCount} max={cascadeLimit} label="Usage" sublabel={`${cascadeCount} / ${cascadeLimit}`} size={80} />
+          <div className="flex-1">
+            <div className="mb-2 flex justify-between text-sm">
+              <span className="text-cascade-muted">Cascades this billing period</span>
+              <span className="text-white">
+                {cascadeCount} / {cascadeLimit}
+              </span>
+            </div>
+            <div className="w-full bg-cascade-dark rounded-full h-2">
+              <div
+                className="bg-cascade-red h-2 rounded-full transition-all"
+                style={{ width: `${usagePercent}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
