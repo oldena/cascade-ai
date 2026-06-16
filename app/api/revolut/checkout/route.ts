@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     .update({ payment_customer_id: `pending_${targetPlan}_${Date.now()}` })
     .eq('id', userId)
 
-  const url = `https://revolut.me/${REVOLUT_USERNAME}?amount=${price}&currency=EUR`
+  const amountInCents = price * 100
+  const url = `https://revolut.me/${REVOLUT_USERNAME}?amount=${amountInCents}&currency=EUR`
   return Response.json({ url, price, targetPlan })
 }
