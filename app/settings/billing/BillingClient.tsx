@@ -10,6 +10,34 @@ interface Props {
   upgraded: boolean
 }
 
+const UPGRADE_PLANS = [
+  {
+    key: 'pro',
+    label: 'Pro',
+    price: '€49/mo',
+    features: ['100 cascades/mois', '10 profils clients', '10 comptes sociaux'],
+    color: 'border-purple-600 hover:border-purple-400',
+    badge: 'bg-purple-900/40 text-purple-300',
+  },
+  {
+    key: 'agency',
+    label: 'Agency',
+    price: '€99/mo',
+    features: ['200 cascades/mois', '20 profils clients', '20 comptes sociaux', 'Toutes intégrations'],
+    color: 'border-cascade-teal hover:border-cascade-teal/70',
+    badge: 'bg-cascade-teal/15 text-cascade-teal',
+    popular: true,
+  },
+  {
+    key: 'enterprise',
+    label: 'Enterprise',
+    price: 'Sur devis',
+    features: ['Cascades illimitées', 'Clients illimités', 'API publique', 'Support dédié'],
+    color: 'border-yellow-700 hover:border-yellow-500',
+    badge: 'bg-yellow-900/40 text-yellow-300',
+  },
+]
+
 export function BillingClient({
   plan,
   cascadeCount,
@@ -19,6 +47,7 @@ export function BillingClient({
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPicker, setShowPicker] = useState(false)
 
   const handleUpgrade = async (targetPlan: string) => {
     setLoading(true)
@@ -90,36 +119,20 @@ export function BillingClient({
             </span>
           </div>
 
-          {plan === 'starter' ? (
-            <button
-              onClick={() => handleUpgrade('pro')}
-              disabled={loading}
-              className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Redirecting…' : 'Upgrade to Pro — €49/mo'}
-            </button>
-          ) : plan === 'pro' ? (
-            <button
-              onClick={() => handleUpgrade('agency')}
-              disabled={loading}
-              className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Redirecting…' : 'Upgrade to Agency — €99/mo'}
-            </button>
-          ) : plan === 'agency' ? (
-            <a
-              href="mailto:contact@cascadeagentic.com?subject=Enterprise Plan"
-              className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity inline-block"
-            >
-              Passer à Enterprise
-            </a>
-          ) : (
+          {plan === 'enterprise' ? (
             <button
               onClick={handleManage}
               disabled={loading}
               className="px-4 py-2 border border-cascade-border text-cascade-muted rounded-lg text-sm font-medium hover:text-white hover:border-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Redirecting…' : 'Manage Subscription'}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowPicker(true)}
+              className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Choisir mon upgrade →
             </button>
           )}
         </div>
@@ -166,6 +179,60 @@ export function BillingClient({
         <p className="text-cascade-muted text-sm text-center">
           Your plan was set manually. Contact support to link a payment method.
         </p>
+      )}
+
+      {/* Plan picker modal */}
+      {showPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 w-full max-w-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-white font-semibold text-lg">Choisissez votre plan</h3>
+              <button onClick={() => setShowPicker(false)} className="text-cascade-muted hover:text-white text-xl leading-none">✕</button>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {UPGRADE_PLANS.filter((p) => {
+                const order = ['starter', 'pro', 'agency', 'enterprise']
+                return order.indexOf(p.key) > order.indexOf(plan)
+              }).map((p) => (
+                <div
+                  key={p.key}
+                  className={`relative border-2 rounded-xl p-5 flex flex-col gap-3 transition-colors cursor-pointer ${p.color}`}
+                  onClick={() => {
+                    setShowPicker(false)
+                    if (p.key === 'enterprise') {
+                      window.location.href = 'mailto:contact@cascadeagentic.com?subject=Enterprise Plan'
+                    } else {
+                      handleUpgrade(p.key)
+                    }
+                  }}
+                >
+                  {p.popular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cascade-teal text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                      POPULAIRE
+                    </span>
+                  )}
+                  <div>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.badge}`}>{p.label}</span>
+                  </div>
+                  <div className="text-2xl font-bold text-white">{p.price}</div>
+                  <ul className="space-y-1.5 flex-1">
+                    {p.features.map((f) => (
+                      <li key={f} className="text-xs text-cascade-muted flex items-center gap-1.5">
+                        <span className="text-cascade-teal">✓</span> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="text-xs text-center text-cascade-text-2 mt-2 border border-current rounded-lg py-1.5 opacity-70 hover:opacity-100 transition-opacity">
+                    {p.key === 'enterprise' ? 'Contacter →' : `Passer à ${p.label} →`}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {loading && (
+              <p className="text-center text-cascade-muted text-sm mt-4">Redirection vers Revolut…</p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

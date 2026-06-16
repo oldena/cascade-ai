@@ -2,6 +2,7 @@
 import { auth } from "@clerk/nextjs/server"
 import Link from "next/link"
 import type { Metadata } from "next"
+import { LandingChat } from "@/components/LandingChat"
 
 export const metadata: Metadata = {
   title: "Cascade AI — Automatisez votre marketing avec l'IA",
@@ -417,6 +418,8 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      <LandingChat />
 
       <footer className="border-t border-cascade-border py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cascade-muted">
