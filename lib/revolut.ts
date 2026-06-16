@@ -69,9 +69,10 @@ export async function upsertUserPlan(
     payment_subscription_id: orderId,
   }
 
-  if (plan === 'agency') {
+  if (plan === 'pro' || plan === 'agency' || plan === 'enterprise') {
     payload.billing_period_start = new Date().toISOString()
     payload.cascade_count_this_month = 0
+    payload.subscription_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
   }
 
   const { error } = await supabaseAdmin

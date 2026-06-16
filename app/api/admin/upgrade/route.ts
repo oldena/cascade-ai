@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   if (!targetUserId) return Response.json({ error: 'targetUserId required' }, { status: 400 })
-  if (!['starter', 'pro', 'agency', 'enterprise'].includes(plan)) {
+  if (!['trial', 'starter', 'pro', 'agency', 'enterprise'].includes(plan)) {
     return Response.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
   if (plan === 'pro' || plan === 'agency' || plan === 'enterprise') {
     updatePayload.billing_period_start = new Date().toISOString()
     updatePayload.cascade_count_this_month = 0
+    updatePayload.subscription_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
   }
 
   const { error } = await supabaseAdmin

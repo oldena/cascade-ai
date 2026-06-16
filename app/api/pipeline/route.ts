@@ -2,6 +2,7 @@ import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getPipelineSteps, PIPELINE_DEFINITIONS, DEFAULT_PIPELINE } from '@/lib/pipeline-definitions'
+import { checkSubscriptionActive } from '@/lib/subscription'
 
 export async function POST(req: Request) {
   if (!process.env.MISTRAL_API_KEY) {
@@ -64,6 +65,19 @@ export async function POST(req: Request) {
   if (userError || !user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const subscription = await checkSubscriptionActive(userId)
+  if (!subscription.active) {
+    const message = subscription.reason === 'trial_expired'
+      ? 'Votre essai gratuit de 7 jours est terminé. Passez à un plan payant pour continuer.'
+      : subscription.reason === 'subscription_expired'
+      ? 'Votre abonnement a expiré. Renouvelez votre plan pour continuer.'
+      : 'Aucun plan actif. Souscrivez un plan pour continuer.'
+    return new Response(JSON.stringify({ error: message, code: subscription.reason ?? 'no_plan' }), {
+      status: 402,
       headers: { 'Content-Type': 'application/json' },
     })
   }

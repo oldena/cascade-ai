@@ -1,4 +1,4 @@
-export type Plan = 'starter' | 'pro' | 'agency' | 'enterprise'
+export type Plan = 'trial' | 'starter' | 'pro' | 'agency' | 'enterprise'
 
 export interface User {
   id: string

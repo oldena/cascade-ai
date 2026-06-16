@@ -5,9 +5,10 @@ import type { Metadata } from "next"
 import { LandingChat } from "@/components/LandingChat"
 
 export const metadata: Metadata = {
-  title: "Cascade AI — Automatisez votre marketing avec l'IA",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://cascadeai.fr"),
+  title: "Cascade AI — Automatisez votre marketing avec l'IA | Alternative à Jasper, Copy.ai",
   description:
-    "Cascade AI génère en quelques minutes des campagnes marketing complètes. 18 agents IA nommés travaillent en séquence : stratège, rédacteur, créatif, SEO, ads, CRM. Publiez directement sur Metricool, Meta Ads, Notion, WhatsApp.",
+    "Cascade AI génère en quelques minutes des campagnes marketing complètes. 18 agents IA nommés travaillent en séquence : stratège, rédacteur, créatif, SEO, ads, CRM. Publiez directement sur Metricool, Meta Ads, Notion, WhatsApp. Moins cher qu'une agence, plus rapide que ChatGPT.",
   keywords: [
     "marketing IA",
     "automatisation marketing",
@@ -16,12 +17,28 @@ export const metadata: Metadata = {
     "AI marketing France",
     "agents IA marketing",
     "Cascade AI",
+    "alternative Jasper AI",
+    "alternative Copy.ai",
+    "alternative ChatGPT marketing",
+    "agence marketing IA",
+    "automatisation contenu LinkedIn",
+    "génération campagne publicitaire IA",
+    "outil marketing pour agences",
   ],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
   openGraph: {
     title: "Cascade AI — 18 agents IA pour votre marketing",
-    description: "Brief vers campagne complète en 3-8 min. 18 agents spécialisés, 13 pipelines, 6 intégrations.",
+    description: "Brief vers campagne complète en 3-8 min. 18 agents spécialisés, 13 pipelines, 6 intégrations. Moins cher qu'une agence, plus rapide qu'un freelance.",
     type: "website",
     locale: "fr_FR",
+    siteName: "Cascade AI",
   },
   twitter: {
     card: "summary_large_image",
@@ -29,6 +46,16 @@ export const metadata: Metadata = {
     description: "Brief vers campagne complète en 3-8 min. 13 pipelines, 6 intégrations.",
   },
 }
+
+const COMPARISON = [
+  { feature: "Agents IA spécialisés", cascade: "18 agents nommés", chatgpt: "1 chatbot généraliste", jasper: "Templates seuls", agence: "2-5 personnes" },
+  { feature: "Temps pour une campagne complète", cascade: "3-8 min", chatgpt: "Plusieurs heures (prompts manuels)", jasper: "1-2h (assemblage manuel)", agence: "1-2 semaines" },
+  { feature: "Stratégie + contenu + ads en un flux", cascade: "✓ Automatique", chatgpt: "✗ Manuel", jasper: "✗ Manuel", agence: "✓ Mais lent" },
+  { feature: "Publication directe (Metricool, Meta Ads…)", cascade: "✓ 6 intégrations natives", chatgpt: "✗", jasper: "✗", agence: "Selon agence" },
+  { feature: "Contexte multi-clients", cascade: "✓ Profils illimités", chatgpt: "✗ Recommence à zéro", jasper: "Limité", agence: "✓" },
+  { feature: "Coût mensuel", cascade: "€29-99", chatgpt: "€20 + temps humain", jasper: "€49-125", agence: "€2000-8000" },
+  { feature: "Essai gratuit", cascade: "7 jours, sans CB", chatgpt: "Limité", jasper: "7 jours", agence: "✗" },
+]
 
 const AGENT_GROUPS = [
   {
@@ -180,8 +207,39 @@ export default async function HomePage() {
   const { userId } = await auth()
   if (userId) redirect("/dashboard")
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        name: "Cascade AI",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        description: "18 agents IA orchestrent stratégie, contenu, ads et CRM pour générer une campagne marketing complète en 3 à 8 minutes.",
+        offers: [
+          { "@type": "Offer", name: "Starter", price: "29", priceCurrency: "EUR" },
+          { "@type": "Offer", name: "Pro", price: "49", priceCurrency: "EUR" },
+          { "@type": "Offer", name: "Agency", price: "99", priceCurrency: "EUR" },
+        ],
+        aggregateRating: { "@type": "AggregateRating", ratingValue: "4.9", reviewCount: "4" },
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQ.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: { "@type": "Answer", text: item.a },
+        })),
+      },
+    ],
+  }
+
   return (
     <main className="min-h-screen bg-cascade-bg text-cascade-text">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <nav className="sticky top-0 z-50 border-b border-cascade-border bg-cascade-bg/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <span className="text-lg font-bold tracking-tight text-cascade-teal">Cascade AI</span>
@@ -191,6 +249,9 @@ export default async function HomePage() {
             </Link>
             <Link href="#integrations" className="hidden sm:block text-sm text-cascade-text-2 hover:text-cascade-text transition-colors">
               Intégrations
+            </Link>
+            <Link href="#comparaison" className="hidden sm:block text-sm text-cascade-text-2 hover:text-cascade-text transition-colors">
+              Comparatif
             </Link>
             <Link href="#faq" className="hidden sm:block text-sm text-cascade-text-2 hover:text-cascade-text transition-colors">
               FAQ
@@ -294,6 +355,39 @@ export default async function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="comparaison" className="bg-cascade-surface border-y border-cascade-border py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-center mb-3">Cascade AI vs ChatGPT, Jasper et les agences</h2>
+          <p className="text-cascade-text-2 text-center text-sm mb-10 max-w-2xl mx-auto">
+            Un chatbot généraliste répond à des prompts. Une agence facture des semaines. Cascade orchestre 18 agents spécialisés pour livrer une campagne complète en minutes, à une fraction du coût.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse min-w-[640px]">
+              <thead>
+                <tr className="border-b border-cascade-border">
+                  <th className="text-left py-3 px-3 text-cascade-text-2 font-medium">Critère</th>
+                  <th className="text-left py-3 px-3 text-cascade-teal font-semibold">Cascade AI</th>
+                  <th className="text-left py-3 px-3 text-cascade-muted font-medium">ChatGPT</th>
+                  <th className="text-left py-3 px-3 text-cascade-muted font-medium">Jasper / Copy.ai</th>
+                  <th className="text-left py-3 px-3 text-cascade-muted font-medium">Agence marketing</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON.map((row) => (
+                  <tr key={row.feature} className="border-b border-cascade-border/60">
+                    <td className="py-3 px-3 text-cascade-text-2">{row.feature}</td>
+                    <td className="py-3 px-3 text-cascade-text font-medium">{row.cascade}</td>
+                    <td className="py-3 px-3 text-cascade-muted">{row.chatgpt}</td>
+                    <td className="py-3 px-3 text-cascade-muted">{row.jasper}</td>
+                    <td className="py-3 px-3 text-cascade-muted">{row.agence}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

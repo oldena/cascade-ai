@@ -18,11 +18,11 @@ export default async function BillingPage({
 
   const { data: user } = await supabaseAdmin
     .from('users')
-    .select('plan, stripe_customer_id, cascade_count_this_month, billing_period_start')
+    .select('plan, stripe_customer_id, cascade_count_this_month, billing_period_start, trial_ends_at, subscription_expires_at')
     .eq('id', userId)
     .single()
 
-  const plan = (user?.plan ?? 'starter') as 'starter' | 'agency'
+  const plan = (user?.plan ?? 'trial') as 'trial' | 'starter' | 'pro' | 'agency' | 'enterprise'
   const limits = PLAN_LIMITS[plan]
   const cascadeCount = user?.cascade_count_this_month ?? 0
   const hasSubscription = !!user?.stripe_customer_id
@@ -43,6 +43,8 @@ export default async function BillingPage({
           cascadeLimit={limits.cascades}
           hasSubscription={hasSubscription}
           upgraded={upgraded}
+          trialEndsAt={user?.trial_ends_at ?? null}
+          subscriptionExpiresAt={user?.subscription_expires_at ?? null}
         />
       </div>
     </div>

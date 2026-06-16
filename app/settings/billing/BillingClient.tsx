@@ -3,11 +3,13 @@
 import { useState } from 'react'
 
 interface Props {
-  plan: 'starter' | 'pro' | 'agency' | 'enterprise'
+  plan: 'trial' | 'starter' | 'pro' | 'agency' | 'enterprise'
   cascadeCount: number
   cascadeLimit: number
   hasSubscription: boolean
   upgraded: boolean
+  trialEndsAt: string | null
+  subscriptionExpiresAt: string | null
 }
 
 const UPGRADE_PLANS = [
@@ -44,10 +46,18 @@ export function BillingClient({
   cascadeLimit,
   hasSubscription,
   upgraded,
+  trialEndsAt,
+  subscriptionExpiresAt,
 }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPicker, setShowPicker] = useState(false)
+
+  const expiryDate = plan === 'trial' ? trialEndsAt : subscriptionExpiresAt
+  const daysLeft = expiryDate
+    ? Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null
+  const isExpired = daysLeft !== null && daysLeft <= 0
 
   const handleUpgrade = async (targetPlan: string) => {
     setLoading(true)
@@ -99,6 +109,30 @@ export function BillingClient({
         </div>
       )}
 
+      {/* Expired banner */}
+      {isExpired && (
+        <div className="bg-red-950 border border-red-800 text-red-300 px-4 py-3 rounded-lg flex items-center justify-between gap-4">
+          <span>
+            {plan === 'trial'
+              ? "Votre essai gratuit de 7 jours est terminé. Choisissez un plan pour continuer à utiliser vos agents."
+              : 'Votre abonnement a expiré. Renouvelez pour continuer à utiliser vos agents.'}
+          </span>
+          <button
+            onClick={() => setShowPicker(true)}
+            className="px-3 py-1.5 bg-cascade-red text-white rounded-lg text-sm font-medium whitespace-nowrap hover:opacity-90 transition-opacity"
+          >
+            Choisir un plan →
+          </button>
+        </div>
+      )}
+
+      {/* Trial countdown */}
+      {!isExpired && plan === 'trial' && daysLeft !== null && (
+        <div className="bg-cascade-teal/10 border border-cascade-teal/30 text-cascade-teal px-4 py-3 rounded-lg">
+          Essai gratuit — {daysLeft} jour{daysLeft > 1 ? 's' : ''} restant{daysLeft > 1 ? 's' : ''}. Passez à un plan payant pour ne pas perdre l'accès.
+        </div>
+      )}
+
       {/* Current plan card */}
       <div className="bg-cascade-card border border-cascade-border rounded-xl p-6">
         <h2 className="text-white font-semibold mb-4">Current Plan</h2>
@@ -112,10 +146,10 @@ export function BillingClient({
                   : 'bg-cascade-dark border border-cascade-border text-cascade-muted'
               }`}
             >
-              {plan.charAt(0).toUpperCase() + plan.slice(1)}
+              {plan === 'trial' ? 'Essai gratuit' : plan.charAt(0).toUpperCase() + plan.slice(1)}
             </span>
             <span className="text-cascade-muted text-sm">
-              {plan === 'starter' ? '€29/mo' : plan === 'pro' ? '€49/mo' : plan === 'agency' ? '€99/mo' : 'Sur devis'}
+              {plan === 'trial' ? '7 jours gratuits' : plan === 'starter' ? '€29/mo' : plan === 'pro' ? '€49/mo' : plan === 'agency' ? '€99/mo' : 'Sur devis'}
             </span>
           </div>
 
@@ -191,7 +225,7 @@ export function BillingClient({
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
               {UPGRADE_PLANS.filter((p) => {
-                const order = ['starter', 'pro', 'agency', 'enterprise']
+                const order = ['trial', 'starter', 'pro', 'agency', 'enterprise']
                 return order.indexOf(p.key) > order.indexOf(plan)
               }).map((p) => (
                 <div

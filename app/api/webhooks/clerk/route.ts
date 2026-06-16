@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const { error } = await supabaseAdmin.from('users').insert({
       id,
       email,
-      plan: 'starter',
+      plan: 'trial',
       trial_ends_at: trialEndsAt,
     })
     if (error) return new Response('DB insert failed', { status: 500 })
