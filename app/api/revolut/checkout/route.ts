@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 const REVOLUT_USERNAME = 'oumarc6x6z'
 
 const PLAN_PRICES: Record<string, number> = {
+  pro: 49,
   agency: 99,
 }
 

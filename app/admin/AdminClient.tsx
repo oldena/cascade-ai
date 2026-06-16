@@ -31,9 +31,10 @@ type Props = {
 }
 
 const PLAN_COLORS: Record<string, string> = {
-  starter: 'bg-blue-900/40 text-blue-300 border-blue-700',
-  agency: 'bg-cascade-teal/15 text-cascade-teal border-cascade-teal/40',
-  pro: 'bg-purple-900/40 text-purple-300 border-purple-700',
+  starter:    'bg-blue-900/40 text-blue-300 border-blue-700',
+  pro:        'bg-purple-900/40 text-purple-300 border-purple-700',
+  agency:     'bg-cascade-teal/15 text-cascade-teal border-cascade-teal/40',
+  enterprise: 'bg-yellow-900/40 text-yellow-300 border-yellow-700',
 }
 
 export function AdminClient({ users, stats, recentRuns }: Props) {
@@ -132,7 +133,7 @@ export function AdminClient({ users, stats, recentRuns }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      {['starter', 'agency'].filter((p) => p !== u.plan).map((p) => (
+                      {(['starter', 'pro', 'agency', 'enterprise'] as const).filter((p) => p !== u.plan).map((p) => (
                         <button
                           key={p}
                           onClick={() => changePlan(u.id, p)}

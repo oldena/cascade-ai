@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 interface Props {
-  plan: 'starter' | 'agency'
+  plan: 'starter' | 'pro' | 'agency' | 'enterprise'
   cascadeCount: number
   cascadeLimit: number
   hasSubscription: boolean
@@ -20,14 +20,14 @@ export function BillingClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (targetPlan: string) => {
     setLoading(true)
     setError(null)
     try {
       const res = await fetch('/api/revolut/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetPlan: 'agency' }),
+        body: JSON.stringify({ targetPlan }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to start checkout')
@@ -86,18 +86,33 @@ export function BillingClient({
               {plan.charAt(0).toUpperCase() + plan.slice(1)}
             </span>
             <span className="text-cascade-muted text-sm">
-              €{plan === 'agency' ? '99' : '29'}/mo
+              {plan === 'starter' ? '€29/mo' : plan === 'pro' ? '€49/mo' : plan === 'agency' ? '€99/mo' : 'Sur devis'}
             </span>
           </div>
 
           {plan === 'starter' ? (
             <button
-              onClick={handleUpgrade}
+              onClick={() => handleUpgrade('pro')}
+              disabled={loading}
+              className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Redirecting…' : 'Upgrade to Pro — €49/mo'}
+            </button>
+          ) : plan === 'pro' ? (
+            <button
+              onClick={() => handleUpgrade('agency')}
               disabled={loading}
               className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Redirecting…' : 'Upgrade to Agency — €99/mo'}
             </button>
+          ) : plan === 'agency' ? (
+            <a
+              href="mailto:contact@cascadeagentic.com?subject=Enterprise Plan"
+              className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity inline-block"
+            >
+              Passer à Enterprise
+            </a>
           ) : (
             <button
               onClick={handleManage}
@@ -127,26 +142,22 @@ export function BillingClient({
       {/* Plan comparison */}
       <div className="bg-cascade-card border border-cascade-border rounded-xl p-6">
         <h2 className="text-white font-semibold mb-4">Plan Comparison</h2>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="text-cascade-muted font-medium">Feature</div>
-          <div className="text-center text-cascade-muted font-medium">Starter</div>
-          <div className="text-center text-cascade-muted font-medium">Agency</div>
+        <div className="grid grid-cols-5 gap-3 text-sm">
+          {['Feature', 'Starter', 'Pro', 'Agency', 'Enterprise'].map((h, i) => (
+            <div key={h} className={`font-medium ${i === 0 ? 'text-cascade-muted' : 'text-center text-cascade-muted'}`}>{h}</div>
+          ))}
 
-          <div className="text-cascade-muted">Cascades / month</div>
-          <div className="text-center text-white">50</div>
-          <div className="text-center text-white">200</div>
+          <div className="text-cascade-muted">Cascades / mois</div>
+          {['50', '100', '200', 'Illimité'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
 
-          <div className="text-cascade-muted">Client profiles</div>
-          <div className="text-center text-white">3</div>
-          <div className="text-center text-white">20</div>
+          <div className="text-cascade-muted">Profils clients</div>
+          {['3', '10', '20', 'Illimité'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
 
-          <div className="text-cascade-muted">Social accounts</div>
-          <div className="text-center text-white">3</div>
-          <div className="text-center text-white">20</div>
+          <div className="text-cascade-muted">Comptes sociaux</div>
+          {['3', '10', '20', 'Illimité'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
 
-          <div className="text-cascade-muted">Price</div>
-          <div className="text-center text-white">€29/mo</div>
-          <div className="text-center text-white">€99/mo</div>
+          <div className="text-cascade-muted">Prix</div>
+          {['€29/mo', '€49/mo', '€99/mo', 'Sur devis'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
         </div>
       </div>
 

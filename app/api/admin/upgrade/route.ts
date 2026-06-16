@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   if (!targetUserId) return Response.json({ error: 'targetUserId required' }, { status: 400 })
-  if (!['starter', 'agency'].includes(plan)) {
+  if (!['starter', 'pro', 'agency', 'enterprise'].includes(plan)) {
     return Response.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     payment_customer_id: `revolut_manual_${Date.now()}`,
   }
 
-  if (plan === 'agency') {
+  if (plan === 'pro' || plan === 'agency' || plan === 'enterprise') {
     updatePayload.billing_period_start = new Date().toISOString()
     updatePayload.cascade_count_this_month = 0
   }

@@ -3,8 +3,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/types'
 
 export const PLAN_LIMITS = {
-  starter: { profiles: 3, cascades: 50, accounts: 3 },
-  agency:  { profiles: 20, cascades: 200, accounts: 20 },
+  starter:    { profiles: 3,   cascades: 50,   accounts: 3  },
+  pro:        { profiles: 10,  cascades: 100,  accounts: 10 },
+  agency:     { profiles: 20,  cascades: 200,  accounts: 20 },
+  enterprise: { profiles: 999, cascades: 9999, accounts: 999 },
 } as const satisfies Record<Plan, { profiles: number; cascades: number; accounts: number }>
 
 export type PlanLimits = typeof PLAN_LIMITS[Plan]
