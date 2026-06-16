@@ -3,17 +3,25 @@ export const dynamic = 'force-dynamic'
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
-const REVOLUT_PAYMENT_LINK = 'https://revolut.me/oumarc6x6z'
+const REVOLUT_USERNAME = 'oumarc6x6z'
 
-export async function POST() {
+const PLAN_PRICES: Record<string, number> = {
+  agency: 99,
+}
+
+export async function POST(request: Request) {
   const { userId } = await auth()
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Log payment intent so admin can match and upgrade manually
+  const body = await request.json().catch(() => ({})) as { targetPlan?: string }
+  const targetPlan = body.targetPlan ?? 'agency'
+  const price = PLAN_PRICES[targetPlan] ?? 99
+
   await supabaseAdmin
     .from('users')
-    .update({ payment_customer_id: `pending_${Date.now()}` })
+    .update({ payment_customer_id: `pending_${targetPlan}_${Date.now()}` })
     .eq('id', userId)
 
-  return Response.json({ url: REVOLUT_PAYMENT_LINK })
+  const url = `https://revolut.me/${REVOLUT_USERNAME}/${price}`
+  return Response.json({ url, price, targetPlan })
 }

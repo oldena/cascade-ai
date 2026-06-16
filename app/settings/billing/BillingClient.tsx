@@ -24,7 +24,11 @@ export function BillingClient({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/revolut/checkout', { method: 'POST' })
+      const res = await fetch('/api/revolut/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetPlan: 'agency' }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to start checkout')
       window.location.href = data.url
@@ -92,7 +96,7 @@ export function BillingClient({
               disabled={loading}
               className="px-4 py-2 bg-cascade-red text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Redirecting…' : 'Upgrade to Agency'}
+              {loading ? 'Redirecting…' : 'Upgrade to Agency — €99/mo'}
             </button>
           ) : (
             <button
