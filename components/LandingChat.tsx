@@ -10,7 +10,7 @@ type Message = {
 type Step = {
   bot: string
   options?: { label: string; value: string }[]
-  freeInput?: boolean
+  freeInput?: 'email' | 'whatsapp'
   placeholder?: string
   next?: (val: string) => number
 }
@@ -45,7 +45,7 @@ const STEPS: Step[] = [
       { label: '🚀 Commencer gratuitement', value: 'cta_starter' },
       { label: 'En savoir plus', value: 'more' },
     ],
-    next: (v) => (v === 'more' ? 5 : 99),
+    next: (v) => (v === 'more' ? 5 : 7),
   },
   // 3 — recommande Pro
   {
@@ -54,7 +54,7 @@ const STEPS: Step[] = [
       { label: '🚀 Commencer gratuitement', value: 'cta_pro' },
       { label: 'En savoir plus', value: 'more' },
     ],
-    next: (v) => (v === 'more' ? 5 : 99),
+    next: (v) => (v === 'more' ? 5 : 7),
   },
   // 4 — recommande Agency
   {
@@ -63,7 +63,7 @@ const STEPS: Step[] = [
       { label: '🚀 Commencer gratuitement', value: 'cta_agency' },
       { label: 'Voir Enterprise', value: 'enterprise' },
     ],
-    next: (v) => (v === 'enterprise' ? 6 : 99),
+    next: (v) => (v === 'enterprise' ? 6 : 7),
   },
   // 5 — more info
   {
@@ -73,7 +73,7 @@ const STEPS: Step[] = [
       { label: '📢 Lancer des campagnes ads', value: 'ads' },
       { label: '👥 Gérer plusieurs clients', value: 'clients' },
     ],
-    next: () => 99,
+    next: () => 7,
   },
   // 6 — enterprise
   {
@@ -81,7 +81,19 @@ const STEPS: Step[] = [
     options: [
       { label: '📧 Contacter l\'équipe', value: 'cta_enterprise' },
     ],
-    next: () => 99,
+    next: () => 7,
+  },
+  // 7 — capture email
+  {
+    bot: "Avant de continuer, quel est votre email ? Je vous envoie le lien et garde le contact pour vous accompagner.",
+    freeInput: 'email',
+    placeholder: 'vous@exemple.com',
+  },
+  // 8 — capture whatsapp (optional)
+  {
+    bot: "Et votre numéro WhatsApp (optionnel) ? Je peux vous envoyer des rappels et conseils directement là-bas.",
+    freeInput: 'whatsapp',
+    placeholder: '+33 6 12 34 56 78',
   },
   // 99 — end
   {
@@ -102,6 +114,9 @@ export function LandingChat() {
   const [step, setStep] = useState(0)
   const [started, setStarted] = useState(false)
   const [pulse, setPulse] = useState(true)
+  const [pendingValue, setPendingValue] = useState('cta_starter')
+  const [leadEmail, setLeadEmail] = useState('')
+  const [inputValue, setInputValue] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -127,11 +142,7 @@ export function LandingChat() {
     if (!current) return
 
     if (CTA_MAP[value]) {
-      const href = CTA_MAP[value]
-      setMessages((m) => [...m, { from: 'user', text: label }])
-      if (href.startsWith('mailto')) window.location.href = href
-      else window.location.href = href
-      return
+      setPendingValue(value)
     }
 
     const nextStep = current.next ? current.next(value) : 99
@@ -142,6 +153,51 @@ export function LandingChat() {
 
     setTimeout(() => {
       setMessages((m) => [...m, { from: 'bot', text: STEPS[resolvedStep].bot }])
+    }, 400)
+  }
+
+  function goToCta() {
+    const href = CTA_MAP[pendingValue] ?? '/sign-up'
+    window.location.href = href
+  }
+
+  async function handleFreeInputSubmit(skip = false) {
+    const current = STEPS[step]
+    if (!current?.freeInput) return
+    const value = skip ? '' : inputValue.trim()
+
+    if (current.freeInput === 'email') {
+      if (!skip && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return
+      setLeadEmail(value)
+      setMessages((m) => [...m, { from: 'user', text: skip ? 'Passer' : value }])
+      setInputValue('')
+      setStep(8)
+      setTimeout(() => {
+        setMessages((m) => [...m, { from: 'bot', text: STEPS[8].bot }])
+      }, 400)
+      return
+    }
+
+    // whatsapp step
+    setMessages((m) => [...m, { from: 'user', text: skip ? 'Passer' : value }])
+    setInputValue('')
+
+    if (leadEmail) {
+      fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: leadEmail,
+          whatsappNumber: value || undefined,
+          planInterest: pendingValue,
+        }),
+      }).catch(() => null)
+    }
+
+    setStep(99)
+    setTimeout(() => {
+      setMessages((m) => [...m, { from: 'bot', text: STEPS[99].bot }])
+      setTimeout(goToCta, 900)
     }, 400)
   }
 
@@ -211,6 +267,36 @@ export function LandingChat() {
                     {opt.label}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Free-input (email / whatsapp) for current step */}
+            {messages.length > 0 && messages[messages.length - 1].from === 'bot' && currentStep?.freeInput && (
+              <div className="flex flex-col gap-2 pl-8">
+                <div className="flex gap-2">
+                  <input
+                    type={currentStep.freeInput === 'email' ? 'email' : 'tel'}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleFreeInputSubmit()}
+                    placeholder={currentStep.placeholder}
+                    className="flex-1 text-xs bg-cascade-dark border border-cascade-border rounded-xl px-3 py-2 text-white placeholder:text-cascade-muted focus:outline-none focus:border-cascade-teal"
+                  />
+                  <button
+                    onClick={() => handleFreeInputSubmit()}
+                    className="text-xs bg-cascade-teal text-white rounded-xl px-3 py-2 font-semibold"
+                  >
+                    OK
+                  </button>
+                </div>
+                {currentStep.freeInput === 'whatsapp' && (
+                  <button
+                    onClick={() => handleFreeInputSubmit(true)}
+                    className="text-left text-[11px] text-cascade-muted hover:text-white transition-colors"
+                  >
+                    Passer cette étape
+                  </button>
+                )}
               </div>
             )}
             <div ref={bottomRef} />
