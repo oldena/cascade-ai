@@ -10,6 +10,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/approve(.*)',
   '/api/webhooks/(.*)',
   '/api/extract-file(.*)',
+  '/api/leads(.*)',
+  '/api/cron/(.*)',
 ])
 
 const isBillingRoute = createRouteMatcher([
