@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
-  const [agentsRes, deliverablesRes] = await Promise.all([
+  const [agentsRes, deliverablesRes, tokensRes] = await Promise.all([
     supabaseAdmin
       .from('agents')
       .select('*')
@@ -19,6 +19,10 @@ export default async function DashboardPage() {
       .from('deliverables')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId),
+    supabaseAdmin
+      .from('messages')
+      .select('tokens_used, conversations!inner(user_id)')
+      .eq('conversations.user_id', userId),
   ])
 
   if (agentsRes.error) {
@@ -30,6 +34,10 @@ export default async function DashboardPage() {
 
   const agents: Agent[] = agentsRes.data ?? []
   const livrables = deliverablesRes.count ?? 0
+  const tokensUsed = (tokensRes.data ?? []).reduce(
+    (sum, row) => sum + (row.tokens_used ?? 0),
+    0
+  )
 
   // Featured agent: prefer is_featured flag, otherwise first in sort order
   const featuredAgent = agents.find((a) => a.is_featured) ?? agents[0]
@@ -40,6 +48,7 @@ export default async function DashboardPage() {
   const stats = {
     agentsActifs: agents.length,
     livrables,
+    tokensUsed,
   }
 
   // If there are no agents yet, show a placeholder message

@@ -4,6 +4,7 @@ import type { Agent } from '@/types'
 interface Stats {
   agentsActifs: number
   livrables: number
+  tokensUsed: number
 }
 
 interface HeroBannerProps {
@@ -59,6 +60,22 @@ export function HeroBanner({ featuredAgent, stats }: HeroBannerProps) {
 
           {/* Stats row */}
           <div className="flex flex-wrap gap-8 pt-4 border-t border-cascade-border">
+            {/* Tokens widget — top left priority */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-extrabold text-cascade-red tabular-nums">
+                  {stats.tokensUsed >= 1_000_000
+                    ? `${(stats.tokensUsed / 1_000_000).toFixed(1)}M`
+                    : stats.tokensUsed >= 1_000
+                    ? `${(stats.tokensUsed / 1_000).toFixed(1)}k`
+                    : stats.tokensUsed}
+                </span>
+              </div>
+              <span className="text-cascade-muted text-xs uppercase tracking-widest font-medium">
+                Tokens consommés
+              </span>
+            </div>
+            <div className="w-px bg-cascade-border self-stretch" />
             <div className="flex flex-col gap-1">
               <span className="text-3xl font-extrabold text-cascade-text tabular-nums">
                 {stats.agentsActifs}

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Agent, Conversation, Deliverable, Message } from '@/types'
 
 type AttachedFile = {
@@ -67,6 +69,8 @@ export default function AgentDetailClient({
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Prevents loadMessages from overwriting temp messages during send
   const skipNextLoadRef = useRef(false)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -91,6 +95,27 @@ export default function AgentDetailClient({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConversation?.id])
+
+  async function deleteConversation(id: string) {
+    await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+    setConversations((prev) => prev.filter((c) => c.id !== id))
+    if (activeConversation?.id === id) {
+      const remaining = conversations.filter((c) => c.id !== id)
+      setActiveConversation(remaining[0] ?? null)
+    }
+  }
+
+  async function renameConversation(id: string, title: string) {
+    const res = await fetch(`/api/conversations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    })
+    if (!res.ok) return
+    const updated: Conversation = await res.json()
+    setConversations((prev) => prev.map((c) => (c.id === id ? updated : c)))
+    setRenamingId(null)
+  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -457,14 +482,51 @@ export default function AgentDetailClient({
                     className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
                     <div
-                      className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                         msg.role === 'user'
-                          ? 'bg-cascade-red text-white rounded-tr-sm'
+                          ? 'bg-cascade-red text-white rounded-tr-sm whitespace-pre-wrap'
                           : 'bg-cascade-surface text-cascade-text rounded-tl-sm'
                       }`}
                     >
-                      {msg.content || (
+                      {!msg.content ? (
                         <span className="opacity-50 animate-pulse">...</span>
+                      ) : msg.role === 'user' ? (
+                        msg.content
+                      ) : (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            table: ({ children }) => (
+                              <div className="overflow-x-auto my-2">
+                                <table className="min-w-full border-collapse text-xs">{children}</table>
+                              </div>
+                            ),
+                            thead: ({ children }) => (
+                              <thead className="bg-cascade-border/40">{children}</thead>
+                            ),
+                            th: ({ children }) => (
+                              <th className="border border-cascade-border px-3 py-1.5 text-left font-semibold text-cascade-text">{children}</th>
+                            ),
+                            td: ({ children }) => (
+                              <td className="border border-cascade-border px-3 py-1.5 text-cascade-text-2">{children}</td>
+                            ),
+                            tr: ({ children }) => (
+                              <tr className="even:bg-cascade-border/10">{children}</tr>
+                            ),
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>,
+                            strong: ({ children }) => <strong className="font-semibold text-cascade-text">{children}</strong>,
+                            code: ({ children }) => (
+                              <code className="bg-cascade-bg rounded px-1 py-0.5 text-xs font-mono text-cascade-red">{children}</code>
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="bg-cascade-bg rounded-lg p-3 overflow-x-auto text-xs font-mono mb-2">{children}</pre>
+                            ),
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
                       )}
                     </div>
                     {msg.role === 'assistant' && msg.content && (
@@ -624,28 +686,74 @@ export default function AgentDetailClient({
               ) : (
                 <div className="space-y-2">
                   {conversations.map((conv) => (
-                    <button
+                    <div
                       key={conv.id}
-                      onClick={() => {
-                        setActiveConversation(conv)
-                        setActiveTab('chat')
-                      }}
-                      className="w-full text-left bg-cascade-surface border border-cascade-border rounded-xl px-4 py-3 hover:border-cascade-red transition-colors group"
+                      className="bg-cascade-surface border border-cascade-border rounded-xl px-4 py-3 hover:border-cascade-border transition-colors group"
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-cascade-text text-sm font-medium group-hover:text-white transition-colors">
-                            {conv.title}
-                          </p>
-                          <p className="text-cascade-muted text-xs mt-0.5">
-                            {formatDate(conv.created_at)}
-                          </p>
+                      {renamingId === conv.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            className="flex-1 bg-cascade-bg border border-cascade-border rounded-lg px-3 py-1.5 text-cascade-text text-sm focus:outline-none focus:border-cascade-red"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') renameConversation(conv.id, renameValue)
+                              if (e.key === 'Escape') setRenamingId(null)
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => renameConversation(conv.id, renameValue)}
+                            className="text-cascade-teal text-xs px-3 py-1.5 border border-cascade-teal/40 rounded-lg hover:bg-cascade-teal/10 transition-colors"
+                          >
+                            OK
+                          </button>
+                          <button
+                            onClick={() => setRenamingId(null)}
+                            className="text-cascade-muted text-xs px-2 py-1.5 hover:text-cascade-text transition-colors"
+                          >
+                            ✕
+                          </button>
                         </div>
-                        <span className="text-cascade-muted group-hover:text-cascade-red text-sm transition-colors">
-                          &rarr;
-                        </span>
-                      </div>
-                    </button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => {
+                              setActiveConversation(conv)
+                              setActiveTab('chat')
+                            }}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <p className="text-cascade-text text-sm font-medium truncate">
+                              {conv.title}
+                            </p>
+                            <p className="text-cascade-muted text-xs mt-0.5">
+                              {formatDate(conv.created_at)}
+                            </p>
+                          </button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setRenamingId(conv.id)
+                                setRenameValue(conv.title)
+                              }}
+                              title="Renommer"
+                              className="text-cascade-muted hover:text-cascade-text-2 text-xs p-1.5 rounded-lg hover:bg-cascade-border/40 transition-colors"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => deleteConversation(conv.id)}
+                              title="Supprimer"
+                              className="text-cascade-muted hover:text-cascade-red text-xs p-1.5 rounded-lg hover:bg-cascade-red/10 transition-colors"
+                            >
+                              🗑
+                            </button>
+                            <span className="text-cascade-muted text-sm ml-1">&rarr;</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
