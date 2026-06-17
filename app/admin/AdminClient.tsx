@@ -11,6 +11,7 @@ type UserRow = {
   created_at: string
   client_count: number
   run_count: number
+  tokens_used: number
   is_paid: boolean
   is_manual: boolean
   trial_active: boolean
@@ -42,6 +43,8 @@ type Stats = {
   totalClients: number
   totalLeads: number
   newLeads: number
+  totalTokens: number
+  mrr: number
 }
 
 type Props = {
@@ -71,11 +74,16 @@ function fmt(iso: string) {
 function fmtFull(iso: string) {
   return new Date(iso).toLocaleString('fr-FR')
 }
+function fmtTokens(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`
+  return String(n)
+}
 
 export function AdminClient({ users, stats, recentRuns, leads }: Props) {
   const [upgrading, setUpgrading] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'upgrades' | 'all' | 'leads' | 'runs'>('upgrades')
+  const [activeTab, setActiveTab] = useState<'upgrades' | 'all' | 'leads' | 'runs' | 'tokens'>('upgrades')
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   async function changePlan(targetUserId: string, plan: string) {
@@ -105,6 +113,7 @@ export function AdminClient({ users, stats, recentRuns, leads }: Props) {
 
   const TABS = [
     { key: 'upgrades', label: `Upgrades (${upgradedUsers.length})` },
+    { key: 'tokens', label: 'Tokens & Revenus' },
     { key: 'all', label: `Tous les users (${stats.totalUsers})` },
     { key: 'leads', label: `Leads (${stats.totalLeads})` },
     { key: 'runs', label: 'Pipelines récents' },
@@ -121,10 +130,10 @@ export function AdminClient({ users, stats, recentRuns, leads }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Upgrades', value: stats.upgradedUsers, sub: `${stats.agencyUsers} agency`, color: 'text-cascade-teal' },
+          { label: 'MRR', value: `€${stats.mrr}`, sub: `${stats.upgradedUsers} payants`, color: 'text-cascade-teal' },
           { label: 'Total users', value: stats.totalUsers, sub: `${stats.starterUsers} starter`, color: 'text-white' },
+          { label: 'Tokens (all)', value: fmtTokens(stats.totalTokens), sub: 'agents + pipelines', color: 'text-yellow-300' },
           { label: 'Leads landing', value: stats.totalLeads, sub: `${stats.newLeads} nouveaux`, color: 'text-purple-300' },
-          { label: 'Pipelines', value: stats.totalRuns, sub: `${stats.failedRuns} échoués`, color: 'text-white' },
         ].map((s) => (
           <div key={s.label} className="bg-cascade-surface border border-cascade-border rounded-xl p-5">
             <p className="text-cascade-muted text-xs uppercase tracking-wider mb-1">{s.label}</p>
@@ -336,6 +345,107 @@ export function AdminClient({ users, stats, recentRuns, leads }: Props) {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tokens & Revenus tab */}
+      {activeTab === 'tokens' && (
+        <div className="space-y-6">
+          {/* Revenue summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'MRR estimé', value: `€${stats.mrr}`, sub: 'abonnements actifs', color: 'text-cascade-teal' },
+              { label: 'ARR estimé', value: `€${stats.mrr * 12}`, sub: 'projection annuelle', color: 'text-cascade-teal' },
+              { label: 'Tokens totaux', value: fmtTokens(stats.totalTokens), sub: 'agents + pipelines', color: 'text-yellow-300' },
+              { label: 'Coût IA estimé', value: `€${(stats.totalTokens / 1_000_000 * 3).toFixed(2)}`, sub: '~$3/Mtok (Sonnet)', color: 'text-red-300' },
+            ].map((s) => (
+              <div key={s.label} className="bg-cascade-surface border border-cascade-border rounded-xl p-5">
+                <p className="text-cascade-muted text-xs uppercase tracking-wider mb-1">{s.label}</p>
+                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-cascade-muted text-xs mt-1">{s.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-plan breakdown */}
+          <div className="bg-cascade-surface border border-cascade-border rounded-xl p-6">
+            <h2 className="text-white font-semibold mb-4">Revenus par plan</h2>
+            <div className="space-y-3">
+              {[
+                { plan: 'pro', price: 49 },
+                { plan: 'agency', price: 99 },
+                { plan: 'enterprise', price: 299 },
+              ].map(({ plan, price }) => {
+                const count = users.filter((u) => u.plan === plan).length
+                return (
+                  <div key={plan} className="flex items-center justify-between py-2 border-b border-cascade-border/50">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs border font-medium ${PLAN_COLORS[plan] ?? ''}`}>{plan}</span>
+                      <span className="text-cascade-muted text-sm">{count} utilisateur{count > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-white font-semibold">€{count * price}/mo</span>
+                      <span className="text-cascade-muted text-xs ml-2">(€{price}/u)</span>
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="flex items-center justify-between pt-2 font-bold">
+                <span className="text-white">Total MRR</span>
+                <span className="text-cascade-teal text-lg">€{stats.mrr}/mo</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Per-user token usage */}
+          <div className="bg-cascade-surface border border-cascade-border rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-cascade-border">
+              <h2 className="text-white font-semibold">Tokens par utilisateur</h2>
+              <p className="text-cascade-muted text-xs mt-0.5">Agents + pipelines combinés — trié par consommation</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cascade-border">
+                    {['Email', 'Plan', 'Tokens utilisés', 'Coût estimé', 'Runs', 'Inscrit'].map((h) => (
+                      <th key={h} className="text-left text-cascade-muted font-medium px-4 py-3 text-xs uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...users].sort((a, b) => b.tokens_used - a.tokens_used).slice(0, 50).map((u) => (
+                    <tr key={u.id} className="border-b border-cascade-border/50 hover:bg-cascade-dark/40 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="text-white">{u.email ?? '—'}</p>
+                        <p className="text-cascade-muted text-xs font-mono">{u.id.slice(0, 12)}…</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs border font-medium ${PLAN_COLORS[u.plan] ?? 'bg-cascade-dark text-white border-cascade-border'}`}>
+                          {u.plan}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-yellow-300 font-medium">{fmtTokens(u.tokens_used)}</span>
+                          <div className="w-20 h-1.5 bg-cascade-dark rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-yellow-400 rounded-full"
+                              style={{ width: `${Math.min(100, (u.tokens_used / Math.max(1, stats.totalTokens)) * 100 * users.length)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-cascade-muted text-xs">
+                        €{(u.tokens_used / 1_000_000 * 3).toFixed(3)}
+                      </td>
+                      <td className="px-4 py-3 text-white">{u.run_count}</td>
+                      <td className="px-4 py-3 text-cascade-muted text-xs">{fmt(u.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
