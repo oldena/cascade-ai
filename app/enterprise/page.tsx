@@ -60,6 +60,64 @@ const SLA_TIERS = [
   },
 ]
 
+const TESTIMONIALS_ENTERPRISE = [
+  {
+    name: 'Nadia K.',
+    role: 'Head of Marketing · Agence 25 personnes',
+    avatar: '👩‍💼',
+    color: '#00b4b4',
+    quote: 'On gère 18 clients B2B avec seulement 3 consultants. Cascade nous a permis de tripler notre portefeuille sans recruter. Le ROI a été visible dès le premier mois.',
+  },
+  {
+    name: 'Sébastien M.',
+    role: 'Directeur Digital · Groupe retail 500M€',
+    avatar: '👨‍💼',
+    color: '#a855f7',
+    quote: 'L\'API Enterprise nous a permis d\'intégrer Cascade dans notre CRM interne en 2 jours. 40 collaborateurs marketing utilisent l\'outil au quotidien. La qualité des outputs dépasse nos prestataires habituels.',
+  },
+  {
+    name: 'Amira T.',
+    role: 'CEO · Startup SaaS B2B (Series A)',
+    avatar: '👩‍🚀',
+    color: '#f97316',
+    quote: 'On a remplacé toute notre stack contenu externe (4 freelances, 1 agence) par Cascade Enterprise. On économise €12 000/mois et le délai de production est passé de 3 semaines à 20 minutes.',
+  },
+  {
+    name: 'Thomas R.',
+    role: 'CMO · E-commerce 200 employés',
+    avatar: '🧑‍💻',
+    color: '#22c55e',
+    quote: 'Les 28 pipelines couvrent exactement nos besoins : e-commerce, ads, email, fiches produit. Le white-label nous a permis de déployer l\'outil sous notre marque pour nos équipes régionales.',
+  },
+]
+
+const FAQ_ENTERPRISE = [
+  {
+    q: 'Quelle est la différence entre le plan Agency et Enterprise ?',
+    a: 'Agency est notre plan self-service le plus avancé (200 cascades/mois, 6 intégrations, API 1000 req/jour). Enterprise est sur devis : utilisateurs illimités, API illimitée, SLA 2h ouvrées, onboarding guidé, white-label complet, facturation sur devis (virement, trimestriel ou annuel) et contrat cadre (MSA).',
+  },
+  {
+    q: 'Combien de temps prend l\'intégration via API ?',
+    a: 'Moins d\'une journée pour une intégration basique (webhooks + REST API). Nous fournissons une documentation complète, un environnement sandbox, et un interlocuteur technique dédié pour les clients Enterprise.',
+  },
+  {
+    q: 'Les données de nos clients sont-elles sécurisées ?',
+    a: 'Oui. Hébergement 100% Europe (UE), isolation complète par compte, clés API révocables à tout moment, logs d\'audit disponibles. Aucune donnée client n\'est utilisée pour entraîner des modèles. Conformité RGPD native.',
+  },
+  {
+    q: 'Peut-on personnaliser les pipelines ou créer les nôtres ?',
+    a: 'En Enterprise, oui. Nous configurons des pipelines sur mesure selon votre secteur, votre ton de marque et vos workflows internes. Les 28 pipelines standards sont inclus et disponibles immédiatement.',
+  },
+  {
+    q: 'Quel est le délai pour démarrer après la signature ?',
+    a: 'Accès immédiat après signature. L\'onboarding guidé (session de formation + configuration) se fait dans les 48h ouvrées. Votre équipe est opérationnelle en moins d\'une semaine.',
+  },
+  {
+    q: 'Proposez-vous une démonstration avant engagement ?',
+    a: 'Oui, toujours. Nous offrons une démo personnalisée gratuite avec votre propre use case. Remplissez le formulaire ci-dessous — réponse en moins de 2h ouvrées, sans engagement.',
+  },
+]
+
 const FEATURES_COMPARE = [
   { label: 'Agents IA spécialisés', agency: '18 agents', enterprise: '18 agents + custom' },
   { label: 'Clients / marques', agency: 'Illimité', enterprise: 'Illimité' },
@@ -263,6 +321,53 @@ export default function EnterprisePage() {
               <div className="px-6 py-3 text-center text-cascade-teal text-sm border-l border-cascade-border/50 font-medium">{f.enterprise}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <h2 className="text-3xl font-bold text-center mb-4">Ce que disent nos clients</h2>
+        <p className="text-cascade-muted text-center mb-12 max-w-xl mx-auto">Agences, grandes entreprises et startups — ils ont transformé leur production marketing avec Cascade.</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {TESTIMONIALS_ENTERPRISE.map((t) => (
+            <div key={t.name} className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 flex flex-col gap-4 hover:border-cascade-teal/40 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0" style={{ backgroundColor: t.color + '33' }}>
+                  {t.avatar}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">{t.name}</div>
+                  <div className="text-xs text-cascade-muted">{t.role}</div>
+                </div>
+              </div>
+              <p className="text-sm text-cascade-muted leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className="text-cascade-teal text-sm">★</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-cascade-surface/40 border-y border-cascade-border py-20">
+        <div className="max-w-3xl mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-12">Questions fréquentes</h2>
+          <div className="space-y-4">
+            {FAQ_ENTERPRISE.map((item) => (
+              <details key={item.q} className="group border border-cascade-border rounded-xl bg-cascade-bg overflow-hidden">
+                <summary className="flex items-center justify-between px-6 py-4 cursor-pointer list-none text-sm font-medium text-white hover:text-cascade-teal transition-colors">
+                  {item.q}
+                  <span className="ml-4 flex-shrink-0 text-cascade-muted group-open:rotate-180 transition-transform duration-200">▾</span>
+                </summary>
+                <div className="px-6 pb-5 text-sm text-cascade-muted leading-relaxed border-t border-cascade-border pt-4">
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
