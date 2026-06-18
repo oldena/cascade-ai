@@ -53,7 +53,7 @@ const COMPARISON = [
   { feature: "Stratégie + contenu + ads en un flux", cascade: "✓ Automatique", chatgpt: "✗ Manuel", jasper: "✗ Manuel", agence: "✓ Mais lent" },
   { feature: "Publication directe (Metricool, Meta Ads…)", cascade: "✓ 6 intégrations natives", chatgpt: "✗", jasper: "✗", agence: "Selon agence" },
   { feature: "Contexte multi-clients", cascade: "✓ Profils illimités", chatgpt: "✗ Recommence à zéro", jasper: "Limité", agence: "✓" },
-  { feature: "Coût mensuel", cascade: "€29-99", chatgpt: "€20 + temps humain", jasper: "€49-125", agence: "€2000-8000" },
+  { feature: "Coût mensuel", cascade: "€19-99", chatgpt: "€20 + temps humain", jasper: "€49-125", agence: "€2000-8000" },
   { feature: "Essai gratuit", cascade: "7 jours, sans CB", chatgpt: "Limité", jasper: "7 jours", agence: "✗" },
 ]
 
@@ -413,7 +413,7 @@ export default async function HomePage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <div className="bg-cascade-surface border border-cascade-border rounded-2xl p-6 flex flex-col">
             <div className="text-sm font-medium text-cascade-text-2 mb-2">Starter</div>
-            <div className="text-4xl font-bold text-cascade-text mb-1">€29<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
+            <div className="text-4xl font-bold text-cascade-text mb-1">€19<span className="text-base font-normal text-cascade-text-2">/mo</span></div>
             <p className="text-xs text-cascade-text-2 mb-6">Idéal pour les indépendants</p>
             <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
               <li>✓ 50 cascades / mois</li>

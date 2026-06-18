@@ -40,7 +40,7 @@ const STEPS: Step[] = [
   },
   // 2 — recommande Starter
   {
-    bot: "✅ **Plan Starter à €29/mo** parfait pour vous.\n\n50 cascades/mois, 3 profils clients. Brief → campagne complète en 3-8 min. Essai 7 jours gratuit.",
+    bot: "✅ **Plan Starter à €19/mo** parfait pour vous.\n\n50 cascades/mois, 3 profils clients. Brief → campagne complète en 3-8 min. Essai 7 jours gratuit.",
     options: [
       { label: '🚀 Commencer gratuitement', value: 'cta_starter' },
       { label: 'En savoir plus', value: 'more' },

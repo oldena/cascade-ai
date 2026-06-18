@@ -150,7 +150,7 @@ export function BillingClient({
               {plan === 'trial' ? 'Essai gratuit' : plan.charAt(0).toUpperCase() + plan.slice(1)}
             </span>
             <span className="text-cascade-muted text-sm">
-              {plan === 'trial' ? '7 jours gratuits' : plan === 'starter' ? '€29/mo' : plan === 'pro' ? '€49/mo' : plan === 'agency' ? '€99/mo' : 'Sur devis'}
+              {plan === 'trial' ? '7 jours gratuits' : plan === 'starter' ? '€19/mo' : plan === 'pro' ? '€49/mo' : plan === 'agency' ? '€99/mo' : 'Sur devis'}
             </span>
           </div>
 
@@ -210,7 +210,7 @@ export function BillingClient({
           {['3', '10', '20', 'Illimité'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
 
           <div className="text-cascade-muted">Prix</div>
-          {['€29/mo', '€49/mo', '€99/mo', 'Sur devis'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
+          {['€19/mo', '€49/mo', '€99/mo', 'Sur devis'].map((v) => <div key={v} className="text-center text-white">{v}</div>)}
         </div>
       </div>
 

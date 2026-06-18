@@ -63,7 +63,7 @@ export function SettingsClient({ user, accounts: initialAccounts }: Props) {
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${plan === 'agency' ? 'bg-cascade-red text-white' : 'bg-cascade-dark border border-cascade-border text-cascade-muted'}`}>
             {plan.charAt(0).toUpperCase() + plan.slice(1)}
           </span>
-          <span className="text-cascade-muted text-sm">€{plan === 'agency' ? '79' : '29'}/mo</span>
+          <span className="text-cascade-muted text-sm">€{plan === 'agency' ? '99' : plan === 'pro' ? '49' : '19'}/mo</span>
         </div>
         <div className="mb-2 flex justify-between text-sm">
           <span className="text-cascade-muted">Cascades this month</span>
