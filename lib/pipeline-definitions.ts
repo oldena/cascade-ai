@@ -363,9 +363,9 @@ const ECOMMERCE_COD: PipelineDefinition = {
   icon: '🛒',
   briefPlaceholder: 'Décrivez votre produit, niche, marché cible et modèle de vente (dropshipping, COD, boutique)...',
   templates: [
-    { icon: '📦', label: 'Dropshipping COD Maroc', text: 'Produit : masseur cervical électrique. Prix vente : 299 MAD. COD Maroc. Cible : femmes 30-55 ans, douleurs dos/nuque. Sourcing AliExpress. Objectif : 50 commandes/jour via Facebook Ads. Budget pub : 500 MAD/jour.' },
-    { icon: '👟', label: 'Boutique chaussures', text: 'Boutique e-commerce chaussures tendance. Prix moyen : 89€. Expédition 5-7 jours depuis entrepôt France. Cible : femmes 20-35 ans. Objectif : 100 commandes/mois. Canal : Instagram + Meta Ads.' },
-    { icon: '🧴', label: 'Cosmétique COD Afrique', text: 'Produit : crème éclaircissante naturelle. COD Sénégal + Côte d\'Ivoire. Prix : 15 000 FCFA. Cible : femmes 25-45 ans. Livraison J+2. Objectif : 30 ventes/jour, taux de confirmation 70%+.' },
+    { icon: '🌍', label: 'COD Afrique', text: 'Marché : Afrique francophone (Sénégal, Côte d\'Ivoire, Cameroun). Produit : [votre produit]. Prix vente : [X] FCFA. COD. Cible : [hommes/femmes] [âge] ans. Sourcing AliExpress ou fournisseur local. Livraison J+2. Objectif : [X] commandes/jour, taux confirmation [X]%. Budget pub Facebook : [X] FCFA/jour.' },
+    { icon: '🇺🇸', label: 'COD USA', text: 'Marché : États-Unis. Produit : [votre produit]. Prix vente : $[X]. COD / Cash on delivery. Cible : [hommes/femmes] [âge] ans. Sourcing : USA domestic ou AliExpress Express. Livraison 3-7 jours. Objectif : [X] orders/day. Budget Meta Ads : $[X]/day. Target ROAS : [X]x.' },
+    { icon: '🇪🇺', label: 'COD Europe', text: 'Marché : Europe (France, Belgique, Espagne, Italie). Produit : [votre produit]. Prix vente : [X]€. COD ou paiement différé. Cible : [hommes/femmes] [âge] ans. Entrepôt Europe, livraison J+3. Objectif : [X] commandes/mois. Budget Meta Ads : [X]€/jour. ROAS cible : [X]x.' },
     { icon: '🏋️', label: 'Fitness equipment', text: 'Équipement fitness maison (bandes élastiques, roue abdos). Bundle 3 produits à 49€. France. Cible : hommes/femmes 25-40 ans. Upsell : programme d\'entraînement PDF 9,90€. Objectif : ROAS 3x sur Meta.' },
   ],
   steps: [
