@@ -28,6 +28,9 @@ interface IntegrationFields {
   // Telegram
   telegram_bot_token: string
   telegram_chat_id: string
+  // Google Drive
+  gdrive_service_account_json: string
+  gdrive_folder_id: string
 }
 
 type TestStatus = 'idle' | 'testing' | 'ok' | 'error'
@@ -61,6 +64,7 @@ const EMPTY: IntegrationFields = {
   notion_token: '', notion_database_id: '',
   whatsapp_token: '', whatsapp_phone_id: '',
   telegram_bot_token: '', telegram_chat_id: '',
+  gdrive_service_account_json: '', gdrive_folder_id: '',
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +261,40 @@ export default function IntegrationsPage() {
         { key: 'meta_access_token',  label: 'Access Token',   placeholder: 'EAA…',           secret: true },
         { key: 'meta_ad_account_id', label: 'Ad Account ID',  placeholder: 'act_123456789'   },
       ],
+    },
+    {
+      id: 'google-drive',
+      label: 'Google Drive',
+      emoji: '📁',
+      badge: 'Google Workspace',
+      description: 'Exportez automatiquement les contenus générés (articles, briefs, rapports) vers un dossier Google Drive partagé.',
+      docsUrl: 'https://console.cloud.google.com/apis/credentials',
+      connected: isConnected(['gdrive_service_account_json']),
+      fields: [
+        {
+          key: 'gdrive_service_account_json',
+          label: 'Service Account JSON',
+          placeholder: '{"type":"service_account","project_id":"…","private_key":"…","client_email":"…"}',
+          secret: true,
+          hint: 'Google Cloud Console → IAM → Service Accounts → Créer → Clé JSON. Partager le dossier Drive avec l\'email du service account.',
+        },
+        {
+          key: 'gdrive_folder_id',
+          label: 'ID du dossier Drive (optionnel)',
+          placeholder: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs',
+          hint: 'URL du dossier Drive → dernière partie après /folders/',
+        },
+      ],
+      test: {
+        label: 'Créer un fichier test',
+        run: () => testChannel('google-drive', '/api/integrations/google-drive', {
+          fileName: '✅ Test Cascade AI.txt',
+          content: 'Votre intégration Google Drive fonctionne correctement.',
+          mimeType: 'text/plain',
+        }),
+        status: testStatuses['google-drive'] ?? 'idle',
+        error: testErrors['google-drive'] ?? '',
+      },
     },
   ]
 

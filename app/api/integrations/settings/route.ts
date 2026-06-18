@@ -10,6 +10,7 @@ const ALL_FIELDS = [
   'whatsapp_token', 'whatsapp_phone_id',
   'telegram_bot_token', 'telegram_chat_id',
   'company_context',
+  'gdrive_service_account_json', 'gdrive_folder_id',
 ] as const
 
 type FieldKey = typeof ALL_FIELDS[number]
@@ -18,6 +19,7 @@ const SECRET_FIELDS = new Set<FieldKey>([
   'metricool_token', 'meta_access_token',
   'resend_api_key', 'notion_token',
   'whatsapp_token', 'telegram_bot_token',
+  'gdrive_service_account_json',
 ])
 
 export async function GET() {
