@@ -47,11 +47,24 @@ type Stats = {
   mrr: number
 }
 
+type EnterpriseQuote = {
+  id: string
+  name: string
+  email: string
+  company: string
+  team_size: string
+  use_case: string
+  message: string | null
+  status: string
+  created_at: string
+}
+
 type Props = {
   users: UserRow[]
   stats: Stats
   recentRuns: { id: string; user_id: string; status: string; pipeline_type: string | null; created_at: string }[]
   leads: Lead[]
+  enterpriseQuotes: EnterpriseQuote[]
 }
 
 const PLAN_COLORS: Record<string, string> = {
@@ -80,10 +93,10 @@ function fmtTokens(n: number) {
   return String(n)
 }
 
-export function AdminClient({ users, stats, recentRuns, leads }: Props) {
+export function AdminClient({ users, stats, recentRuns, leads, enterpriseQuotes }: Props) {
   const [upgrading, setUpgrading] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'upgrades' | 'all' | 'leads' | 'runs' | 'tokens'>('upgrades')
+  const [activeTab, setActiveTab] = useState<'upgrades' | 'all' | 'leads' | 'runs' | 'tokens' | 'enterprise'>('upgrades')
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   async function changePlan(targetUserId: string, plan: string) {
@@ -113,6 +126,7 @@ export function AdminClient({ users, stats, recentRuns, leads }: Props) {
 
   const TABS = [
     { key: 'upgrades', label: `Upgrades (${upgradedUsers.length})` },
+    { key: 'enterprise', label: `Enterprise (${enterpriseQuotes.length})` },
     { key: 'tokens', label: 'Tokens & Revenus' },
     { key: 'all', label: `Tous les users (${stats.totalUsers})` },
     { key: 'leads', label: `Leads (${stats.totalLeads})` },
@@ -339,6 +353,57 @@ export function AdminClient({ users, stats, recentRuns, leads }: Props) {
                         {l.last_contacted_at ? fmt(l.last_contacted_at) : '—'}
                       </td>
                       <td className="px-4 py-3 text-cascade-muted text-xs">{fmt(l.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Enterprise quotes tab */}
+      {activeTab === 'enterprise' && (
+        <div className="bg-cascade-surface border border-cascade-border rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-cascade-border">
+            <h2 className="text-white font-semibold">Demandes Enterprise</h2>
+            <p className="text-cascade-muted text-xs mt-0.5">Formulaire /enterprise — prospects B2B à traiter en priorité</p>
+          </div>
+          {enterpriseQuotes.length === 0 ? (
+            <div className="px-6 py-12 text-center text-cascade-muted text-sm">Aucune demande pour l&apos;instant</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cascade-border">
+                    {['Contact', 'Entreprise', 'Équipe', "Cas d'usage", 'Statut', 'Message', 'Date'].map((h) => (
+                      <th key={h} className="text-left text-cascade-muted font-medium px-4 py-3 text-xs uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {enterpriseQuotes.map((q) => (
+                    <tr key={q.id} className="border-b border-cascade-border/50 hover:bg-cascade-dark/40 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="text-white font-medium">{q.name}</p>
+                        <a href={`mailto:${q.email}`} className="text-cascade-teal text-xs hover:underline">{q.email}</a>
+                      </td>
+                      <td className="px-4 py-3 text-white font-semibold">{q.company}</td>
+                      <td className="px-4 py-3 text-cascade-muted text-xs">{q.team_size} pers.</td>
+                      <td className="px-4 py-3 text-cascade-muted text-xs max-w-[160px]">{q.use_case}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs border font-medium ${
+                          q.status === 'new' ? 'bg-blue-900/40 text-blue-300 border-blue-700'
+                          : q.status === 'contacted' ? 'bg-yellow-900/40 text-yellow-300 border-yellow-700'
+                          : q.status === 'demo_scheduled' ? 'bg-purple-900/40 text-purple-300 border-purple-700'
+                          : q.status === 'won' ? 'bg-green-900/40 text-green-300 border-green-700'
+                          : 'bg-cascade-dark text-cascade-muted border-cascade-border'
+                        }`}>
+                          {q.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-cascade-muted text-xs max-w-[200px] truncate">{q.message ?? '—'}</td>
+                      <td className="px-4 py-3 text-cascade-muted text-xs">{fmt(q.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -18,7 +18,7 @@ export default async function AdminPage() {
 
   const PLAN_MRR: Record<string, number> = { starter: 0, pro: 49, agency: 99, enterprise: 299 }
 
-  const [usersRes, runsRes, clientsRes, recentRunsRes, leadsRes, tokensRes] = await Promise.all([
+  const [usersRes, runsRes, clientsRes, recentRunsRes, leadsRes, tokensRes, enterpriseRes] = await Promise.all([
     supabaseAdmin
       .from('users')
       .select('id, email, plan, cascade_count_this_month, billing_period_start, created_at, payment_customer_id, payment_subscription_id, trial_ends_at, trial_used, subscription_expires_at')
@@ -43,6 +43,11 @@ export default async function AdminPage() {
       .from('messages')
       .select('tokens_used, conversations!inner(user_id)')
       .not('tokens_used', 'is', null),
+    supabaseAdmin
+      .from('enterprise_quotes')
+      .select('id, name, email, company, team_size, use_case, message, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   const users = usersRes.data ?? []
@@ -114,6 +119,7 @@ export default async function AdminPage() {
           stats={stats}
           recentRuns={recentRunsRes.data ?? []}
           leads={leadsRes.data ?? []}
+          enterpriseQuotes={enterpriseRes.data ?? []}
         />
       </div>
     </div>

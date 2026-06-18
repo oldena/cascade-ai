@@ -4,6 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const isPublicRoute = createRouteMatcher([
   '/',
+  '/enterprise(.*)',
+  '/api/enterprise/(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/approve/(.*)',

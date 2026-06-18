@@ -83,6 +83,53 @@ export async function sendApprovalCompleteEmail(
   }
 }
 
+export async function sendEnterpriseQuoteEmail(
+  adminEmail: string,
+  data: { name: string; email: string; company: string; teamSize: string; useCase: string; message?: string }
+): Promise<void> {
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: adminEmail,
+      subject: `[Enterprise] Nouvelle demande — ${data.company}`,
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif;color:#111;max-width:600px;margin:0 auto;padding:24px">
+  <h2 style="margin-bottom:8px">🏢 Nouvelle demande Enterprise</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:14px">
+    <tr><td style="padding:8px;color:#666;width:140px">Nom</td><td style="padding:8px;font-weight:600">${escHtml(data.name)}</td></tr>
+    <tr style="background:#f9f9f9"><td style="padding:8px;color:#666">Email</td><td style="padding:8px"><a href="mailto:${escHtml(data.email)}">${escHtml(data.email)}</a></td></tr>
+    <tr><td style="padding:8px;color:#666">Entreprise</td><td style="padding:8px;font-weight:600">${escHtml(data.company)}</td></tr>
+    <tr style="background:#f9f9f9"><td style="padding:8px;color:#666">Taille équipe</td><td style="padding:8px">${escHtml(data.teamSize)}</td></tr>
+    <tr><td style="padding:8px;color:#666">Cas d'usage</td><td style="padding:8px">${escHtml(data.useCase)}</td></tr>
+    ${data.message ? `<tr style="background:#f9f9f9"><td style="padding:8px;color:#666">Message</td><td style="padding:8px">${escHtml(data.message)}</td></tr>` : ''}
+  </table>
+  <p style="margin-top:24px"><a href="${APP_URL}/admin" style="display:inline-block;background:#000;color:#fff;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:600">Voir dans Admin</a></p>
+  <p style="color:#666;font-size:12px;margin-top:16px">Répondre dans les 2h (SLA enterprise).</p>
+</body>
+</html>`,
+    })
+    await resend.emails.send({
+      from: FROM,
+      to: data.email,
+      subject: `Cascade Enterprise — Votre demande a été reçue`,
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif;color:#111;max-width:600px;margin:0 auto;padding:24px">
+  <h2 style="margin-bottom:8px">Merci ${escHtml(data.name)} !</h2>
+  <p>Votre demande pour <strong>${escHtml(data.company)}</strong> a bien été reçue.</p>
+  <p>Notre équipe vous contacte dans les <strong>2 heures ouvrées</strong> pour planifier une démo personnalisée.</p>
+  <p style="color:#666;font-size:13px;margin-top:24px">Cascade AI — L'IA marketing pour les équipes ambitieuses.<br><a href="${APP_URL}">${APP_URL}</a></p>
+</body>
+</html>`,
+    })
+  } catch (err) {
+    console.error('[email] sendEnterpriseQuoteEmail failed:', err)
+  }
+}
+
 /** Minimal HTML escaping to prevent XSS in email body */
 function escHtml(str: string): string {
   return str
