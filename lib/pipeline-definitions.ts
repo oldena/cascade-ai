@@ -355,21 +355,404 @@ const BUSINESS_LOCAL: PipelineDefinition = {
   ],
 }
 
+// ─── Pipeline E-commerce / COD ────────────────────────────────────────────────
+const ECOMMERCE_COD: PipelineDefinition = {
+  id: 'ecommerce-cod',
+  name: 'E-commerce / COD',
+  description: 'Recherche produit, angle marketing, page produit, scripts ads, upsell, confirmation, relance client',
+  icon: '🛒',
+  briefPlaceholder: 'Décrivez votre produit, niche, marché cible et modèle de vente (dropshipping, COD, boutique)...',
+  templates: [
+    { icon: '📦', label: 'Dropshipping COD Maroc', text: 'Produit : masseur cervical électrique. Prix vente : 299 MAD. COD Maroc. Cible : femmes 30-55 ans, douleurs dos/nuque. Sourcing AliExpress. Objectif : 50 commandes/jour via Facebook Ads. Budget pub : 500 MAD/jour.' },
+    { icon: '👟', label: 'Boutique chaussures', text: 'Boutique e-commerce chaussures tendance. Prix moyen : 89€. Expédition 5-7 jours depuis entrepôt France. Cible : femmes 20-35 ans. Objectif : 100 commandes/mois. Canal : Instagram + Meta Ads.' },
+    { icon: '🧴', label: 'Cosmétique COD Afrique', text: 'Produit : crème éclaircissante naturelle. COD Sénégal + Côte d\'Ivoire. Prix : 15 000 FCFA. Cible : femmes 25-45 ans. Livraison J+2. Objectif : 30 ventes/jour, taux de confirmation 70%+.' },
+    { icon: '🏋️', label: 'Fitness equipment', text: 'Équipement fitness maison (bandes élastiques, roue abdos). Bundle 3 produits à 49€. France. Cible : hommes/femmes 25-40 ans. Upsell : programme d\'entraînement PDF 9,90€. Objectif : ROAS 3x sur Meta.' },
+  ],
+  steps: [
+    { slug: 'cod-product',   name: 'Karim',   label: 'Recherche Produit Gagnant', order: 0 },
+    { slug: 'cod-angle',     name: 'Yasmine', label: 'Angle Marketing',           order: 1 },
+    { slug: 'cod-page',      name: 'Amira',   label: 'Page Produit / Landing',    order: 2 },
+    { slug: 'cod-ads',       name: 'Samir',   label: 'Scripts Ads Facebook',      order: 3 },
+    { slug: 'cod-upsell',    name: 'Leila',   label: 'Upsell & Cross-sell',       order: 4 },
+    { slug: 'cod-confirm',   name: 'Nour',    label: 'Script Confirmation Tél.',  order: 5 },
+    { slug: 'cod-relance',   name: 'Mehdi',   label: 'Relance Non-Confirmés',     order: 6 },
+    { slug: 'cod-review',    name: 'Sara',    label: 'Collecte Avis Clients',     order: 7 },
+  ],
+}
+
+// ─── Pipeline Créatives Meta Ads ──────────────────────────────────────────────
+const META_CREATIVES: PipelineDefinition = {
+  id: 'meta-creatives',
+  name: 'Créatives Meta Ads',
+  description: 'Hooks, angles, scripts UGC, briefs créateurs, variations, analyse perf, nouvelles itérations',
+  icon: '🎬',
+  briefPlaceholder: 'Décrivez votre produit/service, votre cible, votre budget et vos objectifs pub Facebook/Instagram...',
+  templates: [
+    { icon: '🧴', label: 'Produit beauté', text: 'Sérum anti-âge premium à 79€. Cible : femmes 40-60 ans. Budget : 3 000€/mois Meta Ads. Objectif : 80 ventes/mois, ROAS 3,5x. Créer 5 angles différents : témoignage, avant/après, expert, urgence, storytelling.' },
+    { icon: '🏋️', label: 'App fitness', text: 'Application fitness (abonnement 9,99€/mois). Cible : hommes 25-40 ans, sédentaires. Budget : 5 000€/mois. KPI : CPI < 3€. Besoin : 6 scripts UGC, 3 variations statiques, 2 briefs créateurs influenceurs.' },
+    { icon: '🎓', label: 'Formation ligne', text: 'Formation trading en ligne à 997€. Cible : salariés 30-50 ans cherchant revenus passifs. Budget : 8 000€/mois Meta. Objectif : 12 ventes/mois. Créer hooks percutants, VSL 60s, carrousels objections.' },
+    { icon: '🛋️', label: 'Mobilier déco', text: 'Boutique mobilier scandinave haut de gamme. Panier moyen 350€. Cible : propriétaires 30-50 ans. Budget : 2 500€/mois. Objectif : 40 ventes/mois. Focus : créatives lifestyle, stories dynamiques, Reels produits.' },
+  ],
+  steps: [
+    { slug: 'mc-strategy',  name: 'Clara',   label: 'Stratégie Créative',         order: 0 },
+    { slug: 'mc-hooks',     name: 'Dylan',   label: 'Hooks & Accroches',          order: 1 },
+    { slug: 'mc-angles',    name: 'Inès',    label: '5 Angles Publicitaires',     order: 2 },
+    { slug: 'mc-ugc',       name: 'Axel',    label: 'Scripts UGC',                order: 3 },
+    { slug: 'mc-brief',     name: 'Jade',    label: 'Briefs Créateurs',           order: 4 },
+    { slug: 'mc-copy',      name: 'Léa',     label: 'Copies Ads (textes)',        order: 5 },
+    { slug: 'mc-visual',    name: 'Mia',     label: 'Direction Visuelle',         order: 6 },
+    { slug: 'mc-iteration', name: 'Hugo',    label: 'Itérations & Tests A/B',     order: 7 },
+  ],
+}
+
+// ─── Pipeline Audit Funnel / CRO ─────────────────────────────────────────────
+const FUNNEL_CRO: PipelineDefinition = {
+  id: 'funnel-cro',
+  name: 'Audit Funnel / CRO',
+  description: 'Analyse tunnel de vente, pages produit, checkout, objections, preuve sociale, recommandations conversion',
+  icon: '🧪',
+  briefPlaceholder: 'Partagez l\'URL de votre funnel, votre taux de conversion actuel et vos objectifs...',
+  templates: [
+    { icon: '🛒', label: 'Funnel e-commerce', text: 'Boutique Shopify, 15 000 visites/mois, taux de conversion 0,8% (moyenne secteur 2,5%). Panier moyen 65€. Points de friction identifiés : page produit, checkout 3 étapes, abandon panier 75%. Objectif : passer à 2% de conversion.' },
+    { icon: '📚', label: 'Tunnel formation', text: 'Funnel webinaire → VSL → page de vente formation 497€. 1 000 inscrits/mois webinaire, taux de présence 30%, taux de vente 2%. Objectif : doubler le taux de vente à 4%. Analyser chaque étape et identifier les fuites.' },
+    { icon: '🎯', label: 'Lead gen B2B', text: 'Landing page service B2B (audit gratuit). 500 visites/mois. Taux de conversion formulaire 3% (objectif 8%). Form de 7 champs, pas de preuve sociale. Secteur : conseil RH. Analyser et optimiser.' },
+    { icon: '📱', label: 'App SaaS onboarding', text: 'Funnel acquisition SaaS : pub → landing → essai gratuit → payant. 2 000 essais/mois, taux de conversion payant 8% (objectif 15%). Analyser l\'onboarding, les emails de nurturing et les objections au paiement.' },
+  ],
+  steps: [
+    { slug: 'cro-map',      name: 'Thomas',  label: 'Cartographie du Funnel',     order: 0 },
+    { slug: 'cro-data',     name: 'Sophie',  label: 'Analyse des Données',        order: 1 },
+    { slug: 'cro-page',     name: 'Lucas',   label: 'Audit Pages Produit',        order: 2 },
+    { slug: 'cro-checkout', name: 'Emma',    label: 'Audit Checkout',             order: 3 },
+    { slug: 'cro-social',   name: 'Pierre',  label: 'Preuve Sociale & Confiance', order: 4 },
+    { slug: 'cro-objec',    name: 'Claire',  label: 'Traitement Objections',      order: 5 },
+    { slug: 'cro-offers',   name: 'Julien',  label: 'Optimisation Offres',        order: 6 },
+    { slug: 'cro-reco',     name: 'Marie',   label: 'Plan d\'Action Priorité',    order: 7 },
+  ],
+}
+
+// ─── Pipeline Email Marketing / Klaviyo ───────────────────────────────────────
+const EMAIL_MARKETING: PipelineDefinition = {
+  id: 'email-marketing',
+  name: 'Email Marketing / Klaviyo',
+  description: 'Flows welcome, abandoned cart, post-purchase, winback, newsletters, segmentation, SMS',
+  icon: '📧',
+  briefPlaceholder: 'Décrivez votre marque e-commerce, votre liste email, vos produits et vos objectifs de revenus email...',
+  templates: [
+    { icon: '👗', label: 'Mode DTC', text: 'Marque de mode DTC. Liste : 12 000 abonnés. CA email actuel : 15% du CA total (objectif 30%). Klaviyo. Flows actifs : welcome basique. Besoin : abandoned cart, post-purchase, winback, campagnes saisonnières.' },
+    { icon: '🍫', label: 'Food & Beverage', text: 'Marque chocolats artisanaux. 8 000 abonnés Klaviyo. Panier moyen 35€. Pic ventes : Noël, Saint-Valentin, Pâques. Besoin : flows automatisés + calendrier 12 newsletters + segmentation acheteurs/non-acheteurs.' },
+    { icon: '💊', label: 'Compléments alimentaires', text: 'Brand compléments alimentaires. 25 000 abonnés. Produit abonnement mensuel 39€. Churn mensuel 8%. Besoin : flow rétention, win-back inactifs 90j, cross-sell entre gammes, SMS pour panier abandonné.' },
+    { icon: '🏠', label: 'Déco maison', text: 'E-commerce déco maison, 18 000 abonnés, taux ouverture 18% (objectif 28%). Besoin : segmentation par catégorie achetée, email anniversaire client, flow post-achat avec inspiration styling, campagnes soldes.' },
+  ],
+  steps: [
+    { slug: 'em-audit',     name: 'Amélie',  label: 'Audit Liste & Segmentation', order: 0 },
+    { slug: 'em-welcome',   name: 'Hugo',    label: 'Flow Welcome (5 emails)',     order: 1 },
+    { slug: 'em-cart',      name: 'Chloé',   label: 'Abandoned Cart (3 emails)',   order: 2 },
+    { slug: 'em-purchase',  name: 'Romain',  label: 'Post-Purchase Flow',         order: 3 },
+    { slug: 'em-winback',   name: 'Julie',   label: 'Winback 90/180 jours',       order: 4 },
+    { slug: 'em-newsletter',name: 'Alex',    label: 'Templates Newsletter',       order: 5 },
+    { slug: 'em-sms',       name: 'Sarah',   label: 'SMS Marketing',              order: 6 },
+    { slug: 'em-subjects',  name: 'Théo',    label: 'Objets & Pré-headers',       order: 7 },
+  ],
+}
+
+// ─── Pipeline Lead Magnet / Funnel Acquisition ────────────────────────────────
+const LEAD_MAGNET: PipelineDefinition = {
+  id: 'lead-magnet',
+  name: 'Lead Magnet / Funnel',
+  description: 'Idée lead magnet, landing page, séquence email, offre d\'entrée, script pub, stratégie nurturing',
+  icon: '🧲',
+  briefPlaceholder: 'Décrivez votre business, votre cible et votre offre principale que vous voulez vendre...',
+  templates: [
+    { icon: '📋', label: 'Coach business', text: 'Coach business pour entrepreneurs. Offre principale : accompagnement 3 mois à 3 000€. Cible : entrepreneurs 0-100k€ CA. Besoin : créer un lead magnet gratuit irrésistible + funnel d\'acquisition 500 leads/mois.' },
+    { icon: '🏋️', label: 'Coach nutrition', text: 'Nutritionniste en ligne. Programme 8 semaines à 297€. Cible : femmes 30-50 ans, perte de poids durable. Objectif : 200 leads/mois qualifiés. Lead magnet idée : guide, quiz, calculateur calories, webinaire.' },
+    { icon: '🏢', label: 'Agence B2B', text: 'Agence SEO ciblant PME e-commerce. Offre : audit SEO payant 990€ puis accompagnement 2 000€/mois. Besoin : lead magnet gratuit (checklist, outil) + funnel LinkedIn + séquence nurturing 30 jours.' },
+    { icon: '🎓', label: 'Infopreneur', text: 'Formateur marketing digital. Formation phare à 1 497€. Liste email 5 000 contacts peu engagés. Objectif : relancer la liste + créer nouveau lead magnet + séquence 14 emails + mini-offre 47€ en tripwire.' },
+  ],
+  steps: [
+    { slug: 'lm-idea',      name: 'Nina',    label: 'Idée Lead Magnet',           order: 0 },
+    { slug: 'lm-landing',   name: 'Victor',  label: 'Landing Page',               order: 1 },
+    { slug: 'lm-tripwire',  name: 'Emma',    label: 'Offre Tripwire',             order: 2 },
+    { slug: 'lm-email1',    name: 'Rafael',  label: 'Séquence Email (1-7)',        order: 3 },
+    { slug: 'lm-email2',    name: 'Zoé',     label: 'Séquence Email (8-14)',       order: 4 },
+    { slug: 'lm-ads',       name: 'Manon',   label: 'Script Pub Acquisition',     order: 5 },
+    { slug: 'lm-nurture',   name: 'Théo',    label: 'Stratégie Nurturing',        order: 6 },
+  ],
+}
+
+// ─── Pipeline TikTok / Reels ──────────────────────────────────────────────────
+const TIKTOK_REELS: PipelineDefinition = {
+  id: 'tiktok-reels',
+  name: 'TikTok / Reels Content',
+  description: 'Idées vidéos, scripts courts, hooks viraux, formats tendance, calendrier 30 jours, CTA, angles persona',
+  icon: '📱',
+  briefPlaceholder: 'Décrivez votre marque, votre niche, votre persona cible et vos objectifs TikTok/Instagram...',
+  templates: [
+    { icon: '👩‍🍳', label: 'Food creator', text: 'Créatrice de contenu food et recettes saines. 15k abonnés Instagram. Objectif : 100k en 6 mois. Niche : recettes rapides 15 min, healthy, budget. Cible : femmes 25-40 ans actives. Monétisation : sponsos + formations.' },
+    { icon: '💄', label: 'Marque beauté', text: 'Marque de cosmétiques naturels. TikTok 8k followers. Objectif : viral, 50k abonnés en 3 mois. Produits : soins visage bio. Cible : femmes 20-35 ans. Besoin : 30 idées vidéos, scripts hooks, tendances à exploiter.' },
+    { icon: '🧑‍💼', label: 'Personal brand B2B', text: 'Consultant marketing freelance. LinkedIn 2k. Objectif : lancer sur TikTok/Reels pour attirer clients PME. Contenu : tips marketing, erreurs communes, coulisses missions. 3 posts/semaine.' },
+    { icon: '🏋️', label: 'Coach fitness', text: 'Coach sportif en ligne. 5k Instagram. Niche : musculation pour débutants 30-45 ans. Objectif : 10 Reels/mois, 1 viral/mois. Convertir en clients programme 12 semaines. Scripts + idées challenges.' },
+  ],
+  steps: [
+    { slug: 'tk-persona',   name: 'Jade',    label: 'Persona & Positionnement',   order: 0 },
+    { slug: 'tk-trends',    name: 'Lou',     label: 'Tendances & Formats',        order: 1 },
+    { slug: 'tk-ideas',     name: 'Enzo',    label: '30 Idées de Vidéos',         order: 2 },
+    { slug: 'tk-hooks',     name: 'Iris',    label: 'Hooks Viraux',               order: 3 },
+    { slug: 'tk-scripts',   name: 'Yann',    label: 'Scripts Vidéos (10)',        order: 4 },
+    { slug: 'tk-calendar',  name: 'Pauline', label: 'Calendrier 30 Jours',       order: 5 },
+    { slug: 'tk-cta',       name: 'Léonie',  label: 'CTA & Conversion',          order: 6 },
+  ],
+}
+
+// ─── Pipeline Coaching / Formation ───────────────────────────────────────────
+const COACHING_FORMATION: PipelineDefinition = {
+  id: 'coaching-formation',
+  name: 'Coaching / Formation',
+  description: 'Positionnement, offre, webinar, VSL, page de vente, séquence email, scripts closing',
+  icon: '🧑‍💼',
+  briefPlaceholder: 'Décrivez votre expertise, votre offre de coaching/formation, votre cible et votre prix...',
+  templates: [
+    { icon: '💰', label: 'Coach finance perso', text: 'Coach en finance personnelle et investissement. Offre : programme 6 semaines "Liberté Financière" à 1 997€. Cible : salariés 30-45 ans avec épargne dormante. Objectif : 20 clients/mois via webinaire + Meta Ads.' },
+    { icon: '🧘', label: 'Coach bien-être', text: 'Coach certifiée en développement personnel et PNL. Programme 3 mois à 2 500€. Cible : femmes cadres 35-50 ans en burnout. Objectif : 8 clients/mois. Canal : LinkedIn + Instagram + bouche à oreille.' },
+    { icon: '💻', label: 'Formation copywriting', text: 'Expert copywriter 8 ans d\'expérience. Formation en ligne "Copywriter Pro" à 997€. Cible : freelances et marketeurs débutants. Objectif : lancement avec 50 ventes. Besoin : VSL, page de vente, séquence 14 emails.' },
+    { icon: '🎯', label: 'Consultant business', text: 'Consultant en développement commercial B2B. Mastermind exclusif 12 places à 5 000€. Cible : dirigeants PME 500k-2M€ CA. Closing téléphonique uniquement. Besoin : funnel application + script découverte + closing.' },
+  ],
+  steps: [
+    { slug: 'cf-position',  name: 'Nathan',  label: 'Positionnement & Niche',     order: 0 },
+    { slug: 'cf-offer',     name: 'Manon',   label: 'Architecture de l\'Offre',   order: 1 },
+    { slug: 'cf-webinar',   name: 'Théo',    label: 'Script Webinaire',           order: 2 },
+    { slug: 'cf-vsl',       name: 'Lou',     label: 'VSL (Video Sales Letter)',    order: 3 },
+    { slug: 'cf-salespage', name: 'Enzo',    label: 'Page de Vente',              order: 4 },
+    { slug: 'cf-emails',    name: 'Iris',    label: 'Séquence Email (10)',        order: 5 },
+    { slug: 'cf-closing',   name: 'Yann',    label: 'Script Closing Téléphone',   order: 6 },
+    { slug: 'cf-objec',     name: 'Pauline', label: 'Gestion des Objections',     order: 7 },
+  ],
+}
+
+// ─── Pipeline Restaurant / Café Local ────────────────────────────────────────
+const RESTAURANT_LOCAL: PipelineDefinition = {
+  id: 'restaurant-local',
+  name: 'Restaurant / Café Local',
+  description: 'Offres promotionnelles, posts réseaux, Google Business, menus, campagnes locales, fidélisation',
+  icon: '🏪',
+  briefPlaceholder: 'Décrivez votre restaurant : type de cuisine, localisation, clientèle cible et objectifs...',
+  templates: [
+    { icon: '🍕', label: 'Pizzeria livraison', text: 'Pizzeria artisanale, Lyon Part-Dieu. Livraison + sur place. 50 couverts. Actif sur Instagram (2k) et Google Maps (4,3⭐, 180 avis). Objectif : augmenter les commandes en ligne de 40% et attirer les groupes corporate midi.' },
+    { icon: '☕', label: 'Coffee shop', text: 'Coffee shop indépendant, Paris 10e. Spécialité : café de spécialité et pâtisseries faites maison. Ouvert depuis 18 mois. 600 abonnés Instagram. Objectif : fidéliser les habitués, attirer les télétravailleurs, ouvrir le dimanche.' },
+    { icon: '🍣', label: 'Restaurant japonais', text: 'Restaurant japonais gastronomique, Bordeaux. 40 couverts. Note Google 4,7⭐. Problème : tables vides les mardis et mercredis. Budget communication : 800€/mois. Objectif : remplir 100% les soirs en semaine.' },
+    { icon: '🥗', label: 'Snack healthy', text: 'Snack healthy et vegan, Toulouse. Click & Collect + salle 20 couverts. Cible : étudiants et jeunes actifs 20-35 ans. Ticket moyen 12€. Objectif : multiplier par 3 les commandes en ligne via campagne locale.' },
+  ],
+  steps: [
+    { slug: 'rest-gmb',     name: 'Théo',    label: 'Optimisation Google Business', order: 0 },
+    { slug: 'rest-offers',  name: 'Nadia',   label: 'Offres & Promotions',         order: 1 },
+    { slug: 'rest-posts',   name: 'Éric',    label: 'Posts Réseaux Sociaux (20)',  order: 2 },
+    { slug: 'rest-menu',    name: 'Chloé',   label: 'Menus Promotionnels',         order: 3 },
+    { slug: 'rest-ads',     name: 'Simon',   label: 'Campagnes Locales Meta',      order: 4 },
+    { slug: 'rest-loyalty', name: 'Hélène',  label: 'Programme Fidélité',          order: 5 },
+    { slug: 'rest-reviews', name: 'Antoine', label: 'Stratégie Avis Clients',      order: 6 },
+  ],
+}
+
+// ─── Pipeline Immobilier ──────────────────────────────────────────────────────
+const IMMOBILIER: PipelineDefinition = {
+  id: 'immobilier',
+  name: 'Immobilier',
+  description: 'Génération mandats, annonces, scripts vendeurs, posts LinkedIn/Facebook, landing estimation gratuite',
+  icon: '🏠',
+  briefPlaceholder: 'Décrivez votre agence ou activité immobilière, votre zone et votre cible (vendeurs/acheteurs/investisseurs)...',
+  templates: [
+    { icon: '🏡', label: 'Agent indépendant', text: 'Agent immobilier indépendant, réseau Safti, secteur Lyon 3e-6e. Objectif : 3 mandats exclusifs/mois. Actuel : 1/mois via recommandations. Budget pub : 500€/mois. Besoin : script prospection porte-à-porte, pubs Facebook, landing estimation.' },
+    { icon: '🏢', label: 'Agence transaction', text: 'Agence immobilière indépendante, 3 négociateurs, Nantes Nord. Spécialité : appartements 150-400k€. Problème : concurrence des grands réseaux. Besoin : stratégie différenciation, posts LinkedIn, campagne mandats, pages services.' },
+    { icon: '💼', label: 'Investissement locatif', text: 'Chasseur immobilier spécialisé investissement locatif (rendement >6%). Cible : investisseurs parisiens cherchant à investir en province. Pack à 3 500€. Besoin : landing page, séquence email nurturing, posts LinkedIn experts.' },
+    { icon: '🏗️', label: 'Promoteur neuf', text: 'Promoteur immobilier, programme 45 appartements neufs, Montpellier. Livraison dans 24 mois. Cible : primo-accédants et investisseurs loi Pinel. Besoin : landing programme, scripts vendeurs, campagnes Meta + Google, relances prospects.' },
+  ],
+  steps: [
+    { slug: 'immo-prospect', name: 'Laura',   label: 'Script Prospection Vendeurs', order: 0 },
+    { slug: 'immo-landing',  name: 'Alexis',  label: 'Landing Estimation Gratuite', order: 1 },
+    { slug: 'immo-annonce',  name: 'Priya',   label: 'Annonces Immobilières',       order: 2 },
+    { slug: 'immo-posts',    name: 'Mehdi',   label: 'Posts LinkedIn / Facebook',   order: 3 },
+    { slug: 'immo-ads',      name: 'Fiona',   label: 'Campagnes Acquisition',       order: 4 },
+    { slug: 'immo-email',    name: 'Simon',   label: 'Séquence Email Prospects',    order: 5 },
+    { slug: 'immo-relance',  name: 'Hélène',  label: 'Relances Mandats',            order: 6 },
+  ],
+}
+
+// ─── Pipeline Cabinet Santé / Bien-être ──────────────────────────────────────
+const SANTE_BIENETRE: PipelineDefinition = {
+  id: 'sante-bienetre',
+  name: 'Cabinet Santé / Bien-être',
+  description: 'Prise de RDV, qualification, pages service, posts éducatifs, campagnes locales, objections patients',
+  icon: '🧑‍⚕️',
+  briefPlaceholder: 'Décrivez votre cabinet, vos spécialités, votre zone géographique et vos objectifs de nouveaux patients...',
+  templates: [
+    { icon: '🦷', label: 'Dentiste / Implants', text: 'Cabinet dentaire 2 praticiens, Paris 16e. Spécialité : implants et esthétique dentaire. Panier moyen 2 500€. Problème : agenda partiellement rempli le jeudi/vendredi. Budget : 1 500€/mois Google + Meta. Objectif : 10 nouvelles consultations implants/mois.' },
+    { icon: '💆', label: 'Centre laser / Esthétique', text: 'Centre esthétique médical : épilation laser, rajeunissement peau, injections. Toulouse. 3 praticiens. Cible : femmes 30-55 ans CSP+. CA actuel : 180k€/an. Objectif : +40% CA via Google Ads + Instagram.' },
+    { icon: '🧘', label: 'Kiné / Ostéo', text: 'Cabinet de kinésithérapie + ostéopathie. 3 praticiens, Lyon 7e. 70% des patients via prescription médecin. Besoin : attirer patients en accès direct (douleurs dos, sportifs). Budget : 300€/mois. Google Maps + posts éducatifs.' },
+    { icon: '🧠', label: 'Psychologue / Thérapeute', text: 'Psychologue clinicienne en libéral, Paris, spécialité burn-out et anxiété. Agenda complet en 3 semaines. Besoin : liste d\'attente digitale, contenus éducatifs pour nourrir la confiance, newsletter patients.' },
+  ],
+  steps: [
+    { slug: 'sante-gmb',    name: 'Élise',   label: 'Google Business & Avis',     order: 0 },
+    { slug: 'sante-page',   name: 'Damien',  label: 'Pages Services',             order: 1 },
+    { slug: 'sante-educ',   name: 'Camille', label: 'Contenus Éducatifs (10)',    order: 2 },
+    { slug: 'sante-ads',    name: 'Vincent', label: 'Campagnes Locales Google',   order: 3 },
+    { slug: 'sante-rdv',    name: 'Alice',   label: 'Parcours Prise de RDV',      order: 4 },
+    { slug: 'sante-objec',  name: 'Boris',   label: 'Objections Patients',        order: 5 },
+    { slug: 'sante-fidel',  name: 'Elena',   label: 'Fidélisation & Rappels',     order: 6 },
+  ],
+}
+
+// ─── Pipeline Artisan Général ─────────────────────────────────────────────────
+const ARTISAN_GENERAL: PipelineDefinition = {
+  id: 'artisan-general',
+  name: 'Artisan Général',
+  description: 'Diagnostic, devis, urgence, zone d\'intervention, relance, avis clients — pour tous corps de métier',
+  icon: '🛠️',
+  briefPlaceholder: 'Décrivez votre métier (peintre, serrurier, menuisier...), votre zone et le type de demande...',
+  templates: [
+    { icon: '🎨', label: 'Peintre en bâtiment', text: 'Peintre en bâtiment, artisan seul, secteur Toulouse et 30km. Particuliers et petites copropriétés. CA : 120k€/an. Problème : trop de temps perdu sur les devis. Besoin : automatiser qualification + devis + relances.' },
+    { icon: '🔒', label: 'Serrurier urgence', text: 'Serrurier dépannage urgence 24h/24. Paris et proche banlieue. Interventions : ouverture porte, blindage, changement cylindre. Prix moyen intervention : 180€. Besoin : IA qualification urgence, dispatch, confirmation RDV.' },
+    { icon: '🌡️', label: 'Climatisation / CVC', text: 'Entreprise climatisation et chauffage. 3 techniciens. Île-de-France. Services : installation, entretien, dépannage. Objectif : doubler les contrats d\'entretien annuels (actuellement 80, objectif 160). Relances préventives.' },
+    { icon: '🪟', label: 'Menuisier / Fermetures', text: 'Menuisier spécialisé fenêtres et portes. Bretagne. Artisan certifié RGE. Cible : propriétaires maisons 1960-1990. Dispositif MaPrimeRénov\'. Besoin : qualifier les demandes, expliquer les aides, générer devis.' },
+  ],
+  steps: [
+    { slug: 'art-intake',   name: 'Marco',   label: 'Réception & Diagnostic',    order: 0 },
+    { slug: 'art-qualify',  name: 'Diana',   label: 'Qualification Urgence',      order: 1 },
+    { slug: 'art-zone',     name: 'Sophie',  label: 'Zone & Disponibilités',      order: 2 },
+    { slug: 'art-quote',    name: 'Léa',     label: 'Devis Automatique',         order: 3 },
+    { slug: 'art-confirm',  name: 'Mia',     label: 'Confirmation RDV',          order: 4 },
+    { slug: 'art-relance',  name: 'Camille', label: 'Relance Devis Non-Signés',  order: 5 },
+    { slug: 'art-review',   name: 'Max',     label: 'Collecte Avis Google',      order: 6 },
+  ],
+}
+
+// ─── Pipeline Recrutement / RH ────────────────────────────────────────────────
+const RECRUTEMENT_RH: PipelineDefinition = {
+  id: 'recrutement-rh',
+  name: 'Recrutement / RH',
+  description: 'Annonce emploi, sourcing LinkedIn, messages candidats, grille entretien, scoring, email de suivi',
+  icon: '🧾',
+  briefPlaceholder: 'Décrivez le poste à pourvoir, l\'entreprise, les compétences requises et le profil idéal...',
+  templates: [
+    { icon: '💻', label: 'Dev fullstack', text: 'Recrutement développeur fullstack senior (5+ ans). Stack : React, Node.js, PostgreSQL. Startup SaaS B2B, 30 salariés, Paris. Salaire : 55-70k€. Objectif : 3 candidats qualifiés/semaine. Process : test technique + 2 entretiens.' },
+    { icon: '📊', label: 'Commercial B2B', text: 'Recrutement 3 commerciaux B2B terrain. Secteur : logiciels RH. France entière. Package : 35k fixe + 15k variable. Profil : 2-5 ans expérience vente logiciels. Urgence : démarrage dans 6 semaines.' },
+    { icon: '🏥', label: 'Personnel médical', text: 'Clinique privée, Marseille. Recrutement 2 infirmiers (IDE) spécialité chirurgie. CDI temps plein. Pénurie de profils. Sourcing : LinkedIn + job boards santé. Besoin : messages personnalisés, grille évaluation compétences.' },
+    { icon: '🍕', label: 'Hôtellerie restauration', text: 'Groupe restauration, 12 établissements France. Recrutement massif : 20 serveurs + 8 cuisiniers pour saison estivale. Objectif : remplir tous les postes en 6 semaines. Process rapide : entretien 30 min + réponse 48h.' },
+  ],
+  steps: [
+    { slug: 'rh-brief',     name: 'Lucie',   label: 'Brief Poste & Persona',      order: 0 },
+    { slug: 'rh-annonce',   name: 'Bastien', label: 'Annonce Emploi',             order: 1 },
+    { slug: 'rh-sourcing',  name: 'Anaïs',   label: 'Sourcing LinkedIn',          order: 2 },
+    { slug: 'rh-messages',  name: 'Julien',  label: 'Messages Candidats',         order: 3 },
+    { slug: 'rh-grille',    name: 'Océane',  label: 'Grille d\'Entretien',        order: 4 },
+    { slug: 'rh-scoring',   name: 'Tristan', label: 'Scoring Candidats',          order: 5 },
+    { slug: 'rh-emails',    name: 'Margot',  label: 'Emails Suivi & Refus',       order: 6 },
+  ],
+}
+
+// ─── Pipeline SaaS / App Launch ───────────────────────────────────────────────
+const SAAS_LAUNCH: PipelineDefinition = {
+  id: 'saas-launch',
+  name: 'SaaS / App Launch',
+  description: 'Positionnement, onboarding, landing page, séquence email, pricing, cas d\'usage, Product Hunt',
+  icon: '🧑‍💻',
+  briefPlaceholder: 'Décrivez votre SaaS ou app : fonctionnalité principale, cible, pricing et date de lancement visée...',
+  templates: [
+    { icon: '🤖', label: 'Outil IA B2B', text: 'SaaS IA de génération automatique de rapports financiers pour comptables et DAF. Prix : 99€/mois. Cible : PME 50-500 salariés. MRR actuel : 2 000€. Objectif : 50k€ MRR en 6 mois. Lancement Product Hunt dans 3 semaines.' },
+    { icon: '📊', label: 'Analytics dashboard', text: 'App analytics e-commerce unifiée (Shopify + Meta + Google en un tableau de bord). Pricing freemium → 49€/mois. Cible : marchands Shopify 100k€-1M€/an. Beta 40 utilisateurs. Objectif : 200 payants en 3 mois.' },
+    { icon: '🎯', label: 'CRM niche', text: 'CRM spécialisé pour coachs et thérapeutes. Gestion clients, séances, facturation. 29€/mois. Cible : praticiens libéraux France. 0 MRR, en phase de lancement. Besoin : landing, email waitlist, séquence onboarding, stratégie acquisition.' },
+    { icon: '🔧', label: 'Tool developpeurs', text: 'API de détection de plagiat pour editeurs et plateformes e-learning. Pay-as-you-go. Cible : développeurs et CTOs. Lancement sur Product Hunt + HackerNews. Besoin : landing technique, docs API, email developers, pricing page.' },
+  ],
+  steps: [
+    { slug: 'sl-position',  name: 'Élodie',  label: 'Positionnement & ICP',       order: 0 },
+    { slug: 'sl-landing',   name: 'Victor',  label: 'Landing Page',               order: 1 },
+    { slug: 'sl-pricing',   name: 'Nadia',   label: 'Stratégie Pricing',          order: 2 },
+    { slug: 'sl-onboard',   name: 'Sébastien', label: 'Onboarding Utilisateur',   order: 3 },
+    { slug: 'sl-emails',    name: 'Inès',    label: 'Séquence Email (7 emails)',  order: 4 },
+    { slug: 'sl-usecases',  name: 'Grégoire', label: 'Cas d\'Usage & Témoignages', order: 5 },
+    { slug: 'sl-ph',        name: 'Céline',  label: 'Lancement Product Hunt',     order: 6 },
+    { slug: 'sl-growth',    name: 'Louis',   label: 'Stratégie Growth',           order: 7 },
+  ],
+}
+
+// ─── Pipeline Reporting Marketing ─────────────────────────────────────────────
+const REPORTING_MARKETING: PipelineDefinition = {
+  id: 'reporting-marketing',
+  name: 'Reporting Marketing',
+  description: 'Analyse Meta Ads, Google Ads, SEO, email, CAC, ROAS, CPA, recommandations optimisation',
+  icon: '📊',
+  briefPlaceholder: 'Collez vos métriques clés (dépenses, impressions, clics, conversions, CA) par canal...',
+  templates: [
+    { icon: '🏪', label: 'E-commerce mensuel', text: 'Reporting mensuel boutique e-commerce. Meta Ads : 5k€ dépensés, 180 ventes, CA 14k€ (ROAS 2.8). Google Ads : 2k€, 90 ventes, CA 7k€ (ROAS 3.5). SEO : 18k sessions, 2% conversion. Email : 22% ouverture, 85 ventes. Analyser et recommander.' },
+    { icon: '🎓', label: 'Infoproduit reporting', text: 'Reporting mensuel formateur en ligne. Meta Ads : 8k€ dépensés, 250 leads, 18 ventes formation 997€ (CA 17 946€). Coût par lead : 32€. Coût par vente : 444€. Taux de vente funnel : 7.2%. Webinaire : 35% de présence → 8% de vente.' },
+    { icon: '🏢', label: 'Agence clients', text: 'Rapport mensuel pour client agence. Budget total géré : 12 000€. 3 canaux (Meta, Google Search, Display). Objectif client : 60 leads qualifiés < 200€/lead. Résultats ce mois : 42 leads à 285€. Préparer reporting + plan d\'action.' },
+    { icon: '🔄', label: 'SaaS growth', text: 'Reporting growth SaaS. MRR : 45k€ (+8% MoM). CAC moyen : 320€. LTV : 1 800€. Churn : 4,2%/mois. Canaux : Content/SEO 40%, Paid 35%, Outbound 25%. Analyser, identifier fuites, prioriser actions du mois prochain.' },
+  ],
+  steps: [
+    { slug: 'rep-collect',  name: 'Adèle',   label: 'Collecte Données',           order: 0 },
+    { slug: 'rep-meta',     name: 'Paul',     label: 'Analyse Meta Ads',          order: 1 },
+    { slug: 'rep-google',   name: 'Mélanie',  label: 'Analyse Google Ads',        order: 2 },
+    { slug: 'rep-seo',      name: 'Gaspard',  label: 'Analyse SEO',               order: 3 },
+    { slug: 'rep-email',    name: 'Clément',  label: 'Analyse Email',             order: 4 },
+    { slug: 'rep-kpis',     name: 'Noémie',   label: 'KPIs & Métriques Clés',    order: 5 },
+    { slug: 'rep-insights', name: 'Raphaël',  label: 'Insights & Tendances',      order: 6 },
+    { slug: 'rep-actions',  name: 'Flavie',   label: 'Plan d\'Action Mois+1',     order: 7 },
+  ],
+}
+
+// ─── Pipeline Support Client IA ───────────────────────────────────────────────
+const SUPPORT_CLIENT_IA: PipelineDefinition = {
+  id: 'support-client-ia',
+  name: 'Support Client IA',
+  description: 'FAQ, base de connaissances, scripts réponses, objections, retours, livraison, remboursement',
+  icon: '🤖',
+  briefPlaceholder: 'Décrivez votre produit/service, vos questions fréquentes et les problèmes clients les plus courants...',
+  templates: [
+    { icon: '📦', label: 'E-commerce livraison', text: 'Boutique e-commerce vêtements. 500 commandes/mois. Questions récurrentes : délais livraison, retours, tailles, disponibilité. 30% des tickets = "où est ma commande". Besoin : IA gère 80% des tickets sans humain.' },
+    { icon: '💻', label: 'SaaS support', text: 'SaaS B2B 200 clients. Questions : comment utiliser les fonctions X, bug reporté, demande de facturation, résiliation. 2 agents support débordés. Besoin : base de connaissances IA + réponses automatiques + escalade intelligente.' },
+    { icon: '🎓', label: 'Formation en ligne', text: 'Plateforme formation 2 000 étudiants. Questions : accès cours, certificat, remboursement (garantie 30j), problème technique, progression. Besoin : chatbot FAQ + scripts email + politique remboursement claire.' },
+    { icon: '🏥', label: 'Clinique / Cabinet', text: 'Clinique esthétique, 100 clients/mois. Questions : tarifs, douleur, effets secondaires, délais résultats, annulation RDV. Besoin : FAQ rassurante, scripts WhatsApp pré-consultation, gestion des insatisfactions.' },
+  ],
+  steps: [
+    { slug: 'sup-faq',      name: 'Zoé',     label: 'FAQ Complète (50 Q/R)',     order: 0 },
+    { slug: 'sup-kb',       name: 'Rafael',  label: 'Base de Connaissances',     order: 1 },
+    { slug: 'sup-scripts',  name: 'Emma',    label: 'Scripts Réponses Types',    order: 2 },
+    { slug: 'sup-objec',    name: 'Victor',  label: 'Gestion Objections',        order: 3 },
+    { slug: 'sup-returns',  name: 'Léa',     label: 'Politique Retours/SAV',     order: 4 },
+    { slug: 'sup-delivery', name: 'Camille', label: 'Réponses Livraison',        order: 5 },
+    { slug: 'sup-refund',   name: 'Max',     label: 'Gestion Remboursements',    order: 6 },
+    { slug: 'sup-escalade', name: 'Lena',    label: 'Escalade & Cas Complexes',  order: 7 },
+  ],
+}
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 export const PIPELINE_DEFINITIONS: Record<string, PipelineDefinition> = {
-  'marketing-general': MARKETING_GENERAL,
-  'product-launch':    PRODUCT_LAUNCH,
-  'competitor-audit':  COMPETITOR_AUDIT,
-  'personal-branding': PERSONAL_BRANDING,
-  'seo':               SEO_PIPELINE,
-  'paid-ads':          PAID_ADS,
-  'influencer':        INFLUENCER,
-  'cold-outreach':     COLD_OUTREACH,
-  'pitch-deck':        PITCH_DECK,
-  'architecture':      ARCHITECTURE,
-  'plombier':          PLOMBIER,
-  'electricien':       ELECTRICIEN,
-  'business-local':    BUSINESS_LOCAL,
+  'marketing-general':    MARKETING_GENERAL,
+  'product-launch':       PRODUCT_LAUNCH,
+  'competitor-audit':     COMPETITOR_AUDIT,
+  'personal-branding':    PERSONAL_BRANDING,
+  'seo':                  SEO_PIPELINE,
+  'paid-ads':             PAID_ADS,
+  'influencer':           INFLUENCER,
+  'cold-outreach':        COLD_OUTREACH,
+  'pitch-deck':           PITCH_DECK,
+  'architecture':         ARCHITECTURE,
+  'plombier':             PLOMBIER,
+  'electricien':          ELECTRICIEN,
+  'business-local':       BUSINESS_LOCAL,
+  'ecommerce-cod':        ECOMMERCE_COD,
+  'meta-creatives':       META_CREATIVES,
+  'funnel-cro':           FUNNEL_CRO,
+  'email-marketing':      EMAIL_MARKETING,
+  'lead-magnet':          LEAD_MAGNET,
+  'tiktok-reels':         TIKTOK_REELS,
+  'coaching-formation':   COACHING_FORMATION,
+  'restaurant-local':     RESTAURANT_LOCAL,
+  'immobilier':           IMMOBILIER,
+  'sante-bienetre':       SANTE_BIENETRE,
+  'artisan-general':      ARTISAN_GENERAL,
+  'recrutement-rh':       RECRUTEMENT_RH,
+  'saas-launch':          SAAS_LAUNCH,
+  'reporting-marketing':  REPORTING_MARKETING,
+  'support-client-ia':    SUPPORT_CLIENT_IA,
 }
 
 export const DEFAULT_PIPELINE = 'marketing-general'
