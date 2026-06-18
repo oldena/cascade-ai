@@ -59,6 +59,7 @@ export function EnterpriseContactForm() {
   }
 
   const inputCls = 'w-full bg-cascade-dark border border-cascade-border text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-cascade-teal placeholder:text-cascade-muted/60 transition-colors'
+  const selectStyle = { colorScheme: 'dark' as const }
   const labelCls = 'block text-cascade-muted text-sm font-medium mb-1.5'
 
   return (
@@ -104,7 +105,7 @@ export function EnterpriseContactForm() {
         </div>
         <div>
           <label className={labelCls}>Taille de l&apos;équipe *</label>
-          <select required value={form.team_size} onChange={set('team_size')} className={inputCls}>
+          <select required value={form.team_size} onChange={set('team_size')} className={inputCls} style={selectStyle}>
             <option value="">Sélectionner…</option>
             {TEAM_SIZES.map((s) => <option key={s} value={s}>{s} personnes</option>)}
           </select>
@@ -113,7 +114,7 @@ export function EnterpriseContactForm() {
 
       <div>
         <label className={labelCls}>Principal cas d&apos;usage *</label>
-        <select required value={form.use_case} onChange={set('use_case')} className={inputCls}>
+        <select required value={form.use_case} onChange={set('use_case')} className={inputCls} style={selectStyle}>
           <option value="">Sélectionner…</option>
           {USE_CASES.map((u) => <option key={u} value={u}>{u}</option>)}
         </select>
