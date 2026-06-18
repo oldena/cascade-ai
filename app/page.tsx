@@ -105,17 +105,32 @@ const AGENT_GROUPS = [
 const PIPELINES = [
   { name: "Marketing Général", emoji: "📊" },
   { name: "Lancement Produit", emoji: "🚀" },
-  { name: "Personal Branding LinkedIn", emoji: "💼" },
-  { name: "Thread Twitter/X", emoji: "🐦" },
-  { name: "Newsletter", emoji: "📧" },
-  { name: "Carrousel Instagram", emoji: "📸" },
-  { name: "Script Vidéo YouTube", emoji: "▶️" },
-  { name: "Campagne Meta Ads", emoji: "📢" },
+  { name: "Personal Branding", emoji: "💼" },
   { name: "SEO", emoji: "🔎" },
+  { name: "Paid Ads", emoji: "📢" },
+  { name: "Influencer", emoji: "🌟" },
+  { name: "Cold Outreach", emoji: "📩" },
+  { name: "Pitch Deck", emoji: "🎤" },
+  { name: "E-commerce / COD", emoji: "🛒" },
+  { name: "Créatives Meta Ads", emoji: "🎬" },
+  { name: "Audit Funnel / CRO", emoji: "🧪" },
+  { name: "Email Marketing", emoji: "📧" },
+  { name: "Lead Magnet / Funnel", emoji: "🧲" },
+  { name: "TikTok / Reels", emoji: "📱" },
+  { name: "Coaching / Formation", emoji: "🧑‍💼" },
+  { name: "Restaurant / Café", emoji: "🏪" },
+  { name: "Immobilier", emoji: "🏠" },
+  { name: "Cabinet Santé", emoji: "🧑‍⚕️" },
+  { name: "Artisan Général", emoji: "🛠️" },
+  { name: "Recrutement / RH", emoji: "🧾" },
+  { name: "SaaS / App Launch", emoji: "🧑‍💻" },
+  { name: "Reporting Marketing", emoji: "📊" },
+  { name: "Support Client IA", emoji: "🤖" },
+  { name: "Concurrent Audit", emoji: "🔍" },
   { name: "Business Local", emoji: "📍" },
+  { name: "Plombier", emoji: "🔧" },
+  { name: "Électricien", emoji: "⚡" },
   { name: "Architecture", emoji: "🏗️" },
-  { name: "Plomberie", emoji: "🔧" },
-  { name: "Électricité", emoji: "⚡" },
 ]
 
 const INTEGRATIONS = [
@@ -269,7 +284,7 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-6 py-24 text-center">
         <div className="inline-flex items-center gap-2 bg-cascade-teal/10 border border-cascade-teal/30 rounded-full px-4 py-1.5 mb-8">
           <span className="w-2 h-2 rounded-full bg-cascade-teal animate-pulse" />
-          <span className="text-xs text-cascade-teal font-medium">18 agents IA · 13 pipelines · 6 intégrations</span>
+          <span className="text-xs text-cascade-teal font-medium">18 agents IA · 28 pipelines · 6 intégrations</span>
         </div>
         <h1 className="text-4xl sm:text-6xl font-bold leading-tight mb-6">
           Brief → campagne complète

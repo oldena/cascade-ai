@@ -125,7 +125,7 @@ export default function EnterprisePage() {
           {[
             { value: '18', label: 'Agents IA spécialisés' },
             { value: '< 8 min', label: 'Campagne complète' },
-            { value: '13', label: 'Pipelines prêts à l\'emploi' },
+            { value: '28', label: 'Pipelines prêts à l\'emploi' },
             { value: 'API REST', label: 'Intégration en < 1 jour' },
           ].map((s) => (
             <div key={s.label}>
@@ -134,6 +134,55 @@ export default function EnterprisePage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Pipelines */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <h2 className="text-3xl font-bold text-center mb-4">28 pipelines prêts à l&apos;emploi</h2>
+        <p className="text-cascade-muted text-center mb-12 max-w-2xl mx-auto">
+          Chaque pipeline orchestre automatiquement les bons agents dans le bon ordre — stratégie, contenu, ads, email, CRM.
+          Vos équipes gagnent des heures dès le premier brief.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[
+            { name: 'Marketing Général', emoji: '📊' },
+            { name: 'Lancement Produit', emoji: '🚀' },
+            { name: 'Personal Branding', emoji: '💼' },
+            { name: 'SEO', emoji: '🔎' },
+            { name: 'Paid Ads', emoji: '📢' },
+            { name: 'Influencer', emoji: '🌟' },
+            { name: 'Cold Outreach B2B', emoji: '📩' },
+            { name: 'Pitch Deck', emoji: '🎤' },
+            { name: 'E-commerce / COD', emoji: '🛒' },
+            { name: 'Créatives Meta Ads', emoji: '🎬' },
+            { name: 'Audit Funnel / CRO', emoji: '🧪' },
+            { name: 'Email Marketing', emoji: '📧' },
+            { name: 'Lead Magnet / Funnel', emoji: '🧲' },
+            { name: 'TikTok / Reels', emoji: '📱' },
+            { name: 'Coaching / Formation', emoji: '🧑‍💼' },
+            { name: 'Restaurant / Café', emoji: '🏪' },
+            { name: 'Immobilier', emoji: '🏠' },
+            { name: 'Cabinet Santé', emoji: '🧑‍⚕️' },
+            { name: 'Artisan Général', emoji: '🛠️' },
+            { name: 'Recrutement / RH', emoji: '🧾' },
+            { name: 'SaaS / App Launch', emoji: '🧑‍💻' },
+            { name: 'Reporting Marketing', emoji: '📊' },
+            { name: 'Support Client IA', emoji: '🤖' },
+            { name: 'Concurrent Audit', emoji: '🔍' },
+            { name: 'Business Local', emoji: '📍' },
+            { name: 'Plombier', emoji: '🔧' },
+            { name: 'Électricien', emoji: '⚡' },
+            { name: 'Architecture', emoji: '🏗️' },
+          ].map((p) => (
+            <div key={p.name} className="flex items-center gap-3 bg-cascade-surface border border-cascade-border rounded-xl px-4 py-3 hover:border-cascade-teal/40 transition-colors">
+              <span className="text-xl flex-shrink-0">{p.emoji}</span>
+              <span className="text-sm text-white font-medium">{p.name}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-cascade-muted text-sm mt-8">
+          + pipelines sur mesure disponibles en Enterprise sur demande
+        </p>
       </section>
 
       {/* Use cases */}
