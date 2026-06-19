@@ -1,0 +1,15 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="180" fill="#0f0f14"/>
+
+  <!-- Cascade flow bars -->
+  <rect x="240" y="300" width="120" height="24" rx="12" fill="#e53e3e"/>
+  <rect x="270" y="355" width="120" height="24" rx="12" fill="#e53e3e" opacity="0.82"/>
+  <rect x="300" y="410" width="120" height="24" rx="12" fill="#e53e3e" opacity="0.64"/>
+  <rect x="330" y="465" width="120" height="24" rx="12" fill="#e53e3e" opacity="0.46"/>
+
+  <!-- Large C letterform -->
+  <path d="M 680 310 A 200 200 0 1 0 680 714" fill="none" stroke="#ffffff" stroke-width="78" stroke-linecap="round"/>
+
+  <!-- Red accent dot -->
+  <circle cx="720" cy="734" r="42" fill="#e53e3e"/>
+</svg>
