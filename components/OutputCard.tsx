@@ -9,6 +9,66 @@ interface Props {
   connectedAccounts: SocialAccount[]
 }
 
+function exportCarousel(slides: Array<{ slide: number; title: string; body: string }>) {
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Carousel Cascade AI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f0f0; }
+  .slide {
+    width: 1080px; height: 1080px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 80px; text-align: center; page-break-after: always; margin: 20px auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); border-radius: 16px; position: relative;
+  }
+  .slide-number {
+    position: absolute; top: 40px; right: 50px;
+    color: rgba(255,255,255,0.3); font-size: 18px; font-weight: 600;
+  }
+  .slide-accent {
+    width: 60px; height: 4px; background: #e53e3e; border-radius: 2px; margin-bottom: 40px;
+  }
+  .slide-title {
+    color: #ffffff; font-size: 52px; font-weight: 800; line-height: 1.2;
+    margin-bottom: 32px; letter-spacing: -1px;
+  }
+  .slide-body {
+    color: rgba(255,255,255,0.75); font-size: 26px; line-height: 1.6; max-width: 800px;
+  }
+  .slide-brand {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.2); font-size: 16px; font-weight: 600; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  @media print {
+    body { background: white; }
+    .slide { margin: 0; border-radius: 0; box-shadow: none; page-break-after: always; }
+  }
+  @page { size: 1080px 1080px; margin: 0; }
+</style>
+</head>
+<body>
+${slides.map(s => `
+  <div class="slide">
+    <div class="slide-number">${s.slide}/${slides.length}</div>
+    <div class="slide-accent"></div>
+    <div class="slide-title">${s.title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    <div class="slide-body">${s.body.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    <div class="slide-brand">Cascade AI</div>
+  </div>`).join('')}
+</body>
+</html>`
+
+  const blob = new Blob([html], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  const win = window.open(url, '_blank')
+  if (win) setTimeout(() => URL.revokeObjectURL(url), 10000)
+}
+
 export function OutputCard({ output, cascadeId, connectedAccounts }: Props) {
   const [content, setContent] = useState(output.content)
   const [isEditing, setIsEditing] = useState(false)
@@ -56,6 +116,14 @@ export function OutputCard({ output, cascadeId, connectedAccounts }: Props) {
           {saved && <span className="text-green-400 text-sm">Saved ✓</span>}
         </div>
         <div className="flex gap-2">
+          {output.format === 'carousel' && isStructured && parsedContent && !parseError && (
+            <button
+              onClick={() => exportCarousel(parsedContent)}
+              className="text-cascade-muted hover:text-white text-sm px-3 py-1 border border-cascade-border rounded-lg transition-colors"
+            >
+              Export Slides
+            </button>
+          )}
           <button
             onClick={() => navigator.clipboard.writeText(content)}
             className="text-cascade-muted hover:text-white text-sm px-3 py-1 border border-cascade-border rounded-lg transition-colors"
