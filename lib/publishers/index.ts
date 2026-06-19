@@ -3,6 +3,7 @@ import { publishToLinkedIn } from '@/lib/publishers/linkedin'
 import { publishToInstagram } from '@/lib/publishers/instagram'
 import { publishTwitterThread, publishSingleTweet } from '@/lib/publishers/twitter'
 import { publishTikTokDraft } from '@/lib/publishers/tiktok'
+import { publishToFacebook } from '@/lib/publishers/facebook'
 import type { Platform } from '@/types'
 
 export interface PublishResult {
@@ -44,6 +45,10 @@ export async function executePublish(
     }
     case 'tiktok': {
       return publishTikTokDraft(accessToken, content)
+    }
+    case 'facebook': {
+      const pageId = account.page_id ?? account.platform_user_id
+      return publishToFacebook(accessToken, pageId, content)
     }
     default:
       throw new Error(`Unsupported platform: ${platform}`)
