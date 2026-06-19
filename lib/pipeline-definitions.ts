@@ -723,6 +723,31 @@ const SUPPORT_CLIENT_IA: PipelineDefinition = {
   ],
 }
 
+// ─── Pipeline Croissance LinkedIn ─────────────────────────────────────────────
+const LINKEDIN_GROWTH: PipelineDefinition = {
+  id: 'linkedin-growth',
+  name: 'Croissance LinkedIn',
+  description: 'Audit profil, stratégie de contenu, hooks viraux, lead magnet, calendrier éditorial, analyse de posts, scripts DM, offre irrésistible',
+  icon: '💼',
+  briefPlaceholder: 'Décrivez votre niche, votre audience cible, votre nombre d\'abonnés actuel et votre objectif de monétisation LinkedIn...',
+  templates: [
+    { icon: '🎯', label: 'Coach / Formateur', text: 'Coach business en ligne. Niche : entrepreneurs freelances. 1 200 abonnés LinkedIn. Objectif : 10 000 abonnés en 6 mois + vendre une formation à 997€. Contenu actuel : 1-2 posts/semaine, peu d\'engagement. Cible : consultants indépendants 35-50 ans qui veulent scaler.' },
+    { icon: '💻', label: 'Freelance B2B', text: 'Développeur fullstack freelance. Spécialité : SaaS React/Node.js. 800 abonnés. Objectif : générer 3-5 leads qualifiés/mois via LinkedIn. Budget client cible : 15k€+ par projet. Résultats récents : 2 clients via bouche-à-oreille mais aucun via contenu.' },
+    { icon: '🚀', label: 'Founder / SaaS', text: 'Fondateur SaaS RH (outil d\'onboarding automatisé). 2 500 abonnés. Objectif : personal branding + pipeline B2B via LinkedIn. Cible : DRH et COO PME 50-500 salariés. MRR : 8k€. Besoin : thought leadership + génération de démos.' },
+    { icon: '🏆', label: 'Expert Métier', text: 'Directrice marketing senior, 15 ans d\'expérience. 3 000 abonnés. Objectif : devenir référence LinkedIn dans la niche "marketing B2B SaaS". Reconversion en consultant indépendant dans 12 mois. Besoin : stratégie de contenu autorité + monétisation progressive.' },
+  ],
+  steps: [
+    { slug: 'li-audit',      name: 'Alexis',   label: 'Audit Profil 10K',         order: 0 },
+    { slug: 'li-strategie',  name: 'Sophie',   label: 'Stratège LinkedIn',        order: 1 },
+    { slug: 'li-hook',       name: 'Nathan',   label: 'Hook Viral',               order: 2 },
+    { slug: 'li-leadmag',    name: 'Camille',  label: 'Lead Magnet Post',         order: 3 },
+    { slug: 'li-calendrier', name: 'Élise',    label: 'Calendrier Contenu',       order: 4 },
+    { slug: 'li-analyse',    name: 'Théo',     label: 'Analyseur de Posts',       order: 5 },
+    { slug: 'li-dm',         name: 'Jade',     label: 'Scripts DM',               order: 6 },
+    { slug: 'li-offre',      name: 'Maxime',   label: 'Créateur d\'Offre',        order: 7 },
+  ],
+}
+
 // ─── Registry ─────────────────────────────────────────────────────────────────
 export const PIPELINE_DEFINITIONS: Record<string, PipelineDefinition> = {
   'marketing-general':    MARKETING_GENERAL,
@@ -753,6 +778,7 @@ export const PIPELINE_DEFINITIONS: Record<string, PipelineDefinition> = {
   'saas-launch':          SAAS_LAUNCH,
   'reporting-marketing':  REPORTING_MARKETING,
   'support-client-ia':    SUPPORT_CLIENT_IA,
+  'linkedin-growth':      LINKEDIN_GROWTH,
 }
 
 export const DEFAULT_PIPELINE = 'marketing-general'
