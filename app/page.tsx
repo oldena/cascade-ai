@@ -534,6 +534,8 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-cascade-muted">
           <span>© {new Date().getFullYear()} Cascade AI. Tous droits réservés.</span>
           <div className="flex gap-6">
+            <Link href="/privacy" className="hover:text-cascade-text transition-colors">Confidentialité</Link>
+            <Link href="/terms" className="hover:text-cascade-text transition-colors">CGU</Link>
             <Link href="/sign-in" className="hover:text-cascade-text transition-colors">Connexion</Link>
             <Link href="/sign-up" className="hover:text-cascade-text transition-colors">Inscription</Link>
           </div>
