@@ -536,6 +536,7 @@ export default async function HomePage() {
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-cascade-text transition-colors">Confidentialité</Link>
             <Link href="/terms" className="hover:text-cascade-text transition-colors">CGU</Link>
+            <Link href="/delete-data" className="hover:text-cascade-text transition-colors">Supprimer mes données</Link>
             <Link href="/sign-in" className="hover:text-cascade-text transition-colors">Connexion</Link>
             <Link href="/sign-up" className="hover:text-cascade-text transition-colors">Inscription</Link>
           </div>
