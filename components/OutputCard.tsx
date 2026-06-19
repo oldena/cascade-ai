@@ -9,6 +9,74 @@ interface Props {
   connectedAccounts: SocialAccount[]
 }
 
+function downloadSlidePng(slide: { slide: number; title: string; body: string }, total: number) {
+  const size = 1080
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, size, size)
+  grad.addColorStop(0, '#1a1a2e')
+  grad.addColorStop(0.5, '#16213e')
+  grad.addColorStop(1, '#0f3460')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, size, size)
+
+  // Accent bar
+  ctx.fillStyle = '#e53e3e'
+  ctx.beginPath()
+  ctx.roundRect(size / 2 - 30, 340, 60, 6, 3)
+  ctx.fill()
+
+  // Slide number
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'
+  ctx.font = '600 22px Arial'
+  ctx.textAlign = 'right'
+  ctx.fillText(`${slide.slide}/${total}`, size - 50, 60)
+
+  // Title — word-wrap
+  ctx.fillStyle = '#ffffff'
+  ctx.font = '800 58px Arial'
+  ctx.textAlign = 'center'
+  wrapText(ctx, slide.title, size / 2, 420, size - 160, 72)
+
+  // Body — word-wrap
+  ctx.fillStyle = 'rgba(255,255,255,0.72)'
+  ctx.font = '400 30px Arial'
+  wrapText(ctx, slide.body, size / 2, 620, size - 200, 44)
+
+  // Brand
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'
+  ctx.font = '600 18px Arial'
+  ctx.letterSpacing = '3px'
+  ctx.textAlign = 'center'
+  ctx.fillText('CASCADE AI', size / 2, size - 44)
+
+  const a = document.createElement('a')
+  a.download = `cascade-slide-${slide.slide}.png`
+  a.href = canvas.toDataURL('image/png')
+  a.click()
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  const words = text.split(' ')
+  let line = ''
+  let currentY = y
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, currentY)
+      line = word
+      currentY += lineHeight
+    } else {
+      line = test
+    }
+  }
+  if (line) ctx.fillText(line, x, currentY)
+}
+
 function exportCarousel(slides: Array<{ slide: number; title: string; body: string }>) {
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -117,12 +185,20 @@ export function OutputCard({ output, cascadeId, connectedAccounts }: Props) {
         </div>
         <div className="flex gap-2">
           {output.format === 'carousel' && isStructured && parsedContent && !parseError && (
-            <button
-              onClick={() => exportCarousel(parsedContent)}
-              className="text-cascade-muted hover:text-white text-sm px-3 py-1 border border-cascade-border rounded-lg transition-colors"
-            >
-              Export Slides
-            </button>
+            <>
+              <button
+                onClick={() => parsedContent.forEach((s: { slide: number; title: string; body: string }) => setTimeout(() => downloadSlidePng(s, parsedContent.length), s.slide * 300))}
+                className="text-cascade-muted hover:text-white text-sm px-3 py-1 border border-cascade-border rounded-lg transition-colors"
+              >
+                ↓ PNG
+              </button>
+              <button
+                onClick={() => exportCarousel(parsedContent)}
+                className="text-cascade-muted hover:text-white text-sm px-3 py-1 border border-cascade-border rounded-lg transition-colors"
+              >
+                Export Slides
+              </button>
+            </>
           )}
           <button
             onClick={() => navigator.clipboard.writeText(content)}
