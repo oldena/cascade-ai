@@ -1,7 +1,6 @@
 import 'server-only'
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import pdfParse from 'pdf-parse'
 
 export async function POST(req: Request) {
   const { userId } = await auth()
@@ -13,7 +12,7 @@ export async function POST(req: Request) {
 
   const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
   const isText = ['text/plain', 'text/markdown', 'text/csv', 'application/json'].includes(file.type)
-    || file.name.match(/\.(txt|md|csv|json)$/i)
+    || !!file.name.match(/\.(txt|md|csv|json)$/i)
 
   if (!isPdf && !isText) {
     return NextResponse.json({ error: 'Only PDF, TXT, MD, CSV, JSON supported' }, { status: 400 })
@@ -22,6 +21,8 @@ export async function POST(req: Request) {
   let text: string
   if (isPdf) {
     const buffer = Buffer.from(await file.arrayBuffer())
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
     const data = await pdfParse(buffer)
     text = data.text
   } else {
