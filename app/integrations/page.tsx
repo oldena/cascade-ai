@@ -384,7 +384,7 @@ export default function IntegrationsPage() {
             </div>
             <label className="flex items-center gap-2 px-3 py-2 border border-white/10 rounded-lg text-xs text-white/60 hover:text-white hover:border-white/25 cursor-pointer transition-colors whitespace-nowrap">
               📄 Fichier (TXT/MD)
-              <input type="file" accept=".txt,.md,.csv,.json" className="hidden" onChange={handleImportFile} />
+              <input type="file" accept=".pdf,.txt,.md,.csv,.json" className="hidden" onChange={handleImportFile} />
             </label>
           </div>
 
