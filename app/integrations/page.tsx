@@ -78,6 +78,8 @@ export default function IntegrationsPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [testStatuses, setTestStatuses] = useState<Record<string, TestStatus>>({})
   const [testErrors, setTestErrors] = useState<Record<string, string>>({})
+  const [urlInput, setUrlInput] = useState('')
+  const [importStatus, setImportStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [activeSection, setActiveSection] = useState<string | null>(null)
 
   useEffect(() => {
@@ -89,6 +91,42 @@ export default function IntegrationsPage() {
 
   function handleChange(key: keyof IntegrationFields, value: string) {
     setFields((f) => ({ ...f, [key]: value }))
+  }
+
+  async function handleImportUrl() {
+    if (!urlInput.trim()) return
+    setImportStatus('loading')
+    try {
+      const res = await fetch('/api/brand/ingest-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setFields(f => ({ ...f, company_context: data.context }))
+      setImportStatus('ok')
+    } catch {
+      setImportStatus('error')
+    }
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportStatus('loading')
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/brand/ingest-file', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setFields(f => ({ ...f, company_context: data.context }))
+      setImportStatus('ok')
+    } catch {
+      setImportStatus('error')
+    }
+    e.target.value = ''
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -315,23 +353,56 @@ export default function IntegrationsPage() {
           </p>
         </div>
 
-        {/* Company context */}
+        {/* Company context — Brand Brain */}
         <div className="mb-8 rounded-xl border border-white/8 p-5">
           <div className="flex items-start gap-3 mb-4">
-            <span className="text-xl">🏢</span>
+            <span className="text-xl">🧠</span>
             <div>
-              <p className="font-semibold text-sm text-white/90">Contexte Entreprise</p>
-              <p className="text-[10px] text-white/35">Injecté dans chaque agent IA — décrivez votre marque, offre, ton et cibles.</p>
+              <p className="font-semibold text-sm text-white/90">Brand Brain</p>
+              <p className="text-[10px] text-white/35">Injecté dans chaque agent IA — importez votre site, un fichier ou saisissez manuellement.</p>
             </div>
           </div>
+
+          {/* Import row */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <div className="flex flex-1 gap-2">
+              <input
+                type="url"
+                placeholder="https://votre-site.com"
+                value={urlInput}
+                onChange={e => setUrlInput(e.target.value)}
+                className="flex-1 bg-[#0d0d0d] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#6366f1] transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleImportUrl}
+                disabled={importStatus === 'loading'}
+                className="px-3 py-2 bg-[#6366f1]/80 hover:bg-[#6366f1] text-white text-xs rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {importStatus === 'loading' ? '…' : '🌐 Importer'}
+              </button>
+            </div>
+            <label className="flex items-center gap-2 px-3 py-2 border border-white/10 rounded-lg text-xs text-white/60 hover:text-white hover:border-white/25 cursor-pointer transition-colors whitespace-nowrap">
+              📄 Fichier (TXT/MD)
+              <input type="file" accept=".txt,.md,.csv,.json" className="hidden" onChange={handleImportFile} />
+            </label>
+          </div>
+
+          {importStatus === 'ok' && (
+            <p className="text-green-400 text-xs mb-2">✓ Importé — pensez à sauvegarder ci-dessous.</p>
+          )}
+          {importStatus === 'error' && (
+            <p className="text-red-400 text-xs mb-2">✗ Erreur lors de l&apos;import. Vérifiez l&apos;URL ou le fichier.</p>
+          )}
+
           <textarea
-            rows={5}
+            rows={7}
             value={fields.company_context}
             onChange={(e) => handleChange('company_context', e.target.value)}
             placeholder={"Nom : Cascade Agency\nSecteur : Marketing digital B2B\nOffre : Stratégie contenu + automation IA\nTon : Expert, direct, sans jargon\nCibles : PME françaises 10-200 salariés\nDifférenciation : 100% IA, résultats en 48h"}
             className="w-full bg-[#0d0d0d] border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#6366f1] transition-colors resize-none font-mono"
           />
-          <p className="text-[10px] text-white/30 mt-2">Ce texte est ajouté automatiquement à chaque prompt d&apos;agent pour personnaliser les résultats.</p>
+          <p className="text-[10px] text-white/30 mt-2">Ce texte est injecté dans chaque prompt d&apos;agent. Plus il est précis, meilleurs sont les résultats.</p>
         </div>
 
         {/* Status overview */}
