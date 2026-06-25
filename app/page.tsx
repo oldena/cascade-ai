@@ -51,8 +51,9 @@ const COMPARISON = [
   { feature: "Agents IA spécialisés", cascade: "18 agents nommés", chatgpt: "1 chatbot généraliste", jasper: "Templates seuls", agence: "2-5 personnes" },
   { feature: "Temps pour une campagne complète", cascade: "3-8 min", chatgpt: "Plusieurs heures (prompts manuels)", jasper: "1-2h (assemblage manuel)", agence: "1-2 semaines" },
   { feature: "Stratégie + contenu + ads en un flux", cascade: "✓ Automatique", chatgpt: "✗ Manuel", jasper: "✗ Manuel", agence: "✓ Mais lent" },
-  { feature: "Publication directe (Metricool, Meta Ads…)", cascade: "✓ 6 intégrations natives", chatgpt: "✗", jasper: "✗", agence: "Selon agence" },
+  { feature: "Publication directe (Metricool, Meta Ads…)", cascade: "✓ 7 intégrations natives", chatgpt: "✗", jasper: "✗", agence: "Selon agence" },
   { feature: "Contexte multi-clients", cascade: "✓ Profils illimités", chatgpt: "✗ Recommence à zéro", jasper: "Limité", agence: "✓" },
+  { feature: "Formation agents via Brand Brain (site, PDF…)", cascade: "✓ Import URL + fichiers", chatgpt: "✗ Contexte manuel", jasper: "✗", agence: "✓ Brief manuel" },
   { feature: "Coût mensuel", cascade: "€19-99", chatgpt: "€20 + temps humain", jasper: "€49-125", agence: "€2000-8000" },
   { feature: "Essai gratuit", cascade: "7 jours, sans CB", chatgpt: "Limité", jasper: "7 jours", agence: "✗" },
 ]
@@ -134,6 +135,7 @@ const PIPELINES = [
 ]
 
 const INTEGRATIONS = [
+  { name: "Brand Brain", desc: "Formez vos agents via URL, PDF, TXT — contexte injecté automatiquement", emoji: "🧠", color: "#f59e0b" },
   { name: "Metricool", desc: "Planification et publication sociale", emoji: "📅", color: "#00b4b4" },
   { name: "Meta Ads", desc: "Lancement de campagnes publicitaires", emoji: "📢", color: "#1877f2" },
   { name: "Notion", desc: "Export des livrables et documentation", emoji: "📝", color: "#888" },
@@ -192,7 +194,7 @@ const FAQ = [
   },
   {
     q: "Puis-je publier directement depuis Cascade ?",
-    a: "Oui. Cascade est connecté à Metricool (planification), Meta Ads (campagnes), Notion (export), Telegram et WhatsApp (distribution). Chaque livrable peut être envoyé en un clic.",
+    a: "Oui. Cascade est connecté à Metricool (planification), Meta Ads (campagnes), Notion (export), Telegram et WhatsApp (distribution). Brand Brain permet aussi d'importer votre site ou vos docs pour former les agents. Chaque livrable peut être envoyé en un clic.",
   },
   {
     q: "L'essai gratuit inclut-il toutes les fonctionnalités ?",
@@ -357,7 +359,7 @@ export default async function HomePage() {
       <section id="integrations" className="bg-cascade-surface border-y border-cascade-border py-16">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-2xl font-bold text-center mb-2">Publiez directement depuis Cascade</h2>
-          <p className="text-cascade-text-2 text-center mb-10 text-sm">6 intégrations natives — pas de copier-coller, pas d'aller-retour entre apps.</p>
+          <p className="text-cascade-text-2 text-center mb-10 text-sm">7 intégrations natives — pas de copier-coller, pas d'aller-retour entre apps.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {INTEGRATIONS.map((intg) => (
               <div key={intg.name} className="bg-cascade-bg border border-cascade-border rounded-xl p-5 flex items-start gap-4">
@@ -418,6 +420,7 @@ export default async function HomePage() {
             <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
               <li>✓ 50 cascades / mois</li>
               <li>✓ 3 profils clients</li>
+              <li>✓ Brand Brain (URL + PDF)</li>
               <li>✓ Export PDF</li>
               <li>✓ Partage par lien</li>
             </ul>
@@ -432,9 +435,10 @@ export default async function HomePage() {
             <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
               <li>✓ 80 cascades / mois</li>
               <li>✓ 8 profils clients</li>
+              <li>✓ Brand Brain (URL + PDF + fichiers)</li>
               <li>✓ Export PDF</li>
               <li>✓ Partage par lien</li>
-              <li>✓ 2 intégrations</li>
+              <li>✓ 3 intégrations</li>
             </ul>
             <Link href="/sign-up" className="block text-center bg-cascade-surface border border-cascade-teal text-cascade-teal px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-cascade-teal hover:text-white transition-colors">
               Essai gratuit 7 jours
@@ -448,7 +452,8 @@ export default async function HomePage() {
             <ul className="space-y-2 text-sm text-cascade-text-2 mb-8 flex-1">
               <li>✓ 200 cascades / mois</li>
               <li>✓ 20 profils clients</li>
-              <li>✓ 6 intégrations (Metricool, Meta, Notion…)</li>
+              <li>✓ Brand Brain multi-clients (URL + PDF)</li>
+              <li>✓ 7 intégrations (Metricool, Meta, Notion…)</li>
               <li>✓ Coût IA visible par étape</li>
               <li>✓ Favoris et templates de brief</li>
             </ul>
