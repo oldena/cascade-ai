@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { Agent } from '@/types'
 
@@ -214,20 +215,17 @@ export function HeroBanner({ featuredAgent, otherAgents, stats }: HeroBannerProp
                   boxShadow: `0 0 60px ${featuredAgent.avatar_color}20`,
                 }}
               >
-                {/* Glow orb behind */}
-                <div
-                  className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-3xl opacity-30"
-                  style={{ background: featuredAgent.avatar_color }}
+                {/* CEO photo */}
+                <Image
+                  src="/agent-ceo.png"
+                  alt="Agent CEO"
+                  fill
+                  className="object-cover object-top"
+                  priority
                 />
-                {/* Avatar emoji large */}
-                <div className="relative text-[5rem] mb-2 select-none">
-                  {featuredAgent.avatar_emoji}
-                </div>
-                {/* Subtle figure outline lines */}
-                <div className="absolute bottom-0 left-0 right-0 h-1/3"
-                  style={{
-                    background: 'linear-gradient(to top, #070B09 0%, transparent 100%)',
-                  }}
+                {/* Bottom fade */}
+                <div className="absolute bottom-0 left-0 right-0 h-1/4"
+                  style={{ background: 'linear-gradient(to top, #070B09 0%, transparent 100%)' }}
                 />
               </div>
 
