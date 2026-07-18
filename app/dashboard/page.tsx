@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   const { userId } = await auth()
   if (!userId) redirect('/sign-in')
 
-  const [agentsRes, deliverablesRes, tokensRes] = await Promise.all([
+  const [agentsRes, deliverablesRes, tokensRes, conversationsRes] = await Promise.all([
     supabaseAdmin
       .from('agents')
       .select('*')
@@ -23,6 +23,10 @@ export default async function DashboardPage() {
       .from('messages')
       .select('tokens_used, conversations!inner(user_id)')
       .eq('conversations.user_id', userId),
+    supabaseAdmin
+      .from('conversations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId),
   ])
 
   if (agentsRes.error) {
@@ -38,6 +42,7 @@ export default async function DashboardPage() {
     (sum, row) => sum + (row.tokens_used ?? 0),
     0
   )
+  const conversations = conversationsRes.count ?? 0
 
   // Featured agent: prefer is_featured flag, otherwise first in sort order
   const featuredAgent = agents.find((a) => a.is_featured) ?? agents[0]
@@ -49,6 +54,7 @@ export default async function DashboardPage() {
     agentsActifs: agents.length,
     livrables,
     tokensUsed,
+    conversations,
   }
 
   // If there are no agents yet, show a placeholder message
@@ -69,7 +75,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-cascade-bg">
       <NavBar />
       <main>
-        <HeroBanner featuredAgent={featuredAgent} stats={stats} />
+        <HeroBanner featuredAgent={featuredAgent} otherAgents={otherAgents} stats={stats} />
         <AgentGrid agents={otherAgents} />
       </main>
     </div>
