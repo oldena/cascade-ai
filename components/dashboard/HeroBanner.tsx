@@ -229,22 +229,10 @@ export function HeroBanner({ featuredAgent, otherAgents, stats }: HeroBannerProp
                 />
               </div>
 
-              {/* Badge overlay at bottom */}
-              <div
-                className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-cascade-surface border rounded-xl px-4 py-2 text-center whitespace-nowrap z-10"
-                style={{ borderColor: '#1E3028' }}
-              >
-                <div className="flex items-center gap-1.5 justify-center mb-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cascade-teal animate-pulse" />
-                  <span className="text-cascade-teal text-[10px] font-bold uppercase tracking-widest">
-                    {featuredAgent.role}
-                  </span>
-                </div>
-                <p className="text-cascade-muted text-[10px] leading-tight max-w-[180px]">
-                  Prend les décisions. Donne la direction.
-                  <br />
-                  Aligne l&apos;équipe. Livre la croissance.
-                </p>
+              {/* Online indicator */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 border border-cascade-border">
+                <span className="w-1.5 h-1.5 rounded-full bg-cascade-teal animate-pulse" />
+                <span className="text-cascade-teal text-[9px] font-bold uppercase tracking-widest">En ligne</span>
               </div>
             </div>
 
