@@ -305,10 +305,10 @@ export function HeroBanner({ featuredAgent, otherAgents, stats }: HeroBannerProp
             {/* 2×2 KPI grid */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-4">
               {[
-                { label: 'Leads générés', value: String(stats.livrables || 1248), change: '+28%' },
-                { label: 'Opportunités', value: String(stats.conversations || 312), change: '+34%' },
-                { label: 'Clients signés', value: String(stats.agentsActifs || 78), change: '+26%' },
-                { label: 'CA généré', value: '128 450 €', change: '+37%' },
+                { label: 'Livrables générés', value: formatNum(stats.livrables), change: 'total' },
+                { label: 'Sessions actives', value: formatNum(stats.conversations), change: 'total' },
+                { label: 'Agents actifs', value: String(stats.agentsActifs), change: 'en ligne' },
+                { label: 'Tokens utilisés', value: formatNum(stats.tokensUsed), change: 'cumulé' },
               ].map((kpi) => (
                 <div key={kpi.label} className="flex flex-col gap-0.5">
                   <p className="text-cascade-muted text-[10px]">{kpi.label}</p>
