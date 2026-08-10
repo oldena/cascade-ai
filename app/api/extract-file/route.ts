@@ -26,9 +26,18 @@ export async function POST(req: Request) {
   }
 
   const ext = filename.split('.').pop()?.toLowerCase() ?? ''
-  const resolvedMime = IMAGE_TYPES[ext] ?? (mimeType as 'image/jpeg') ?? 'image/jpeg'
+  const imageType = IMAGE_TYPES[ext]
+  const isPdf = ext === 'pdf'
+
+  if (!imageType && !isPdf) {
+    return new Response(JSON.stringify({ error: `Type de fichier non supporté : .${ext}` }), { status: 400, headers: JSON_HEADERS })
+  }
 
   try {
+    const fileContent = isPdf
+      ? { type: 'document' as const, source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: base64 } }
+      : { type: 'image' as const, source: { type: 'base64' as const, media_type: imageType, data: base64 } }
+
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
@@ -36,17 +45,10 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: resolvedMime,
-                data: base64,
-              },
-            },
+            fileContent,
             {
               type: 'text',
-              text: `Analyse cette image et extrait toutes les informations utiles pour une campagne marketing : marque, produit, slogan, couleurs dominantes, style visuel, textes visibles, cible apparente. Réponds en quelques phrases concises.`,
+              text: `Analyse ce fichier et extrait toutes les informations utiles pour une campagne marketing : marque, produit, slogan, couleurs dominantes, style visuel, textes visibles, cible apparente. Réponds en quelques phrases concises.`,
             },
           ],
         },
@@ -57,7 +59,8 @@ export async function POST(req: Request) {
     const description = content.type === 'text' ? content.text : ''
 
     return new Response(JSON.stringify({ description }), { status: 200, headers: JSON_HEADERS })
-  } catch {
-    return new Response(JSON.stringify({ error: 'Extraction échouée' }), { status: 500, headers: JSON_HEADERS })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return new Response(JSON.stringify({ error: `Extraction échouée: ${msg}` }), { status: 500, headers: JSON_HEADERS })
   }
 }

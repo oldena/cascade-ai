@@ -693,6 +693,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     return initStepsForPipeline(DEFAULT_PIPELINE, savedCeoName)
   })
   const PIPELINE_STEPS = (PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).steps
+  stepsRef.current = steps
   const [error, setError] = useState<string | null>(null)
   const [recentRuns, setRecentRuns] = useState<PipelineRun[]>(initialRuns)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -703,6 +704,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const [currentRunId, setCurrentRunId] = useState<string | null>(null)
   const pollingRef = useRef<boolean>(false)
   const abortRef = useRef<boolean>(false)
+  const stepsRef = useRef<StepState[]>([])
   // Rich brief: file attachment + URLs
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null)
   const [urls, setUrls] = useState<string[]>([''])
@@ -1033,14 +1035,16 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     abortRef.current = false
     setCurrentRunId(runId)
 
-    for (let order = startOrder; order < PIPELINE_STEPS.length; order++) {
+    const currentSteps = stepsRef.current
+    const ordersToRun = currentSteps.map((s) => s.order).filter((o) => o >= startOrder)
+    for (const order of ordersToRun) {
       if (abortRef.current) break
       try {
         await consumeStepStream(runId, order, language)
       } catch (err) {
         if (abortRef.current) break
         const msg = err instanceof Error ? err.message : 'Erreur inconnue'
-        const stepName = PIPELINE_STEPS[order]?.name ?? `étape ${order}`
+        const stepName = currentSteps.find((s) => s.order === order)?.agentName ?? `étape ${order}`
         setSteps((prev) => prev.map((s) => s.order === order ? { ...s, status: 'failed', output: msg } : s))
         pollingRef.current = false
         sessionStorage.removeItem('cascade-active-run')
@@ -1117,14 +1121,19 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
         // Still running — restore done steps and resume from first non-done
         setBrief(run.brief ?? '')
         setSelectedPipelineType(recoveredType)
-        setSteps(recoveredStepsInit.map((s) => {
+        const recoveredSteps = recoveredStepsInit.map((s) => {
           const db = dbSteps.find((ds) => ds.agent_slug === s.agentSlug)
           return { ...s, status: (db?.status ?? 'pending') as StepState['status'], output: db?.output ?? '' }
-        }))
+        })
+        setSteps(recoveredSteps)
+        stepsRef.current = recoveredSteps
         setSseConnected(true)
         setMode('running')
-        const firstPending = dbSteps.findIndex((s) => s.status !== 'done')
-        const resumeOrder = firstPending === -1 ? 0 : firstPending
+        const firstPendingStep = recoveredStepsInit.find((s) => {
+          const db = dbSteps.find((ds) => ds.agent_slug === s.agentSlug)
+          return db?.status !== 'done'
+        })
+        const resumeOrder = firstPendingStep?.order ?? 0
         void runSteps(parsed!.runId, resumeOrder)
       } catch {
         sessionStorage.removeItem('cascade-active-run')
@@ -1166,7 +1175,9 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     if (!finalBrief.trim()) return
     setError(null)
     setRunTokens({ input: 0, output: 0 })
-    setSteps(initStepsForPipeline(selectedPipelineType, ceoName))
+    const freshSteps = initStepsForPipeline(selectedPipelineType, ceoName)
+    setSteps(freshSteps)
+    stepsRef.current = freshSteps
     setSseConnected(false)
     setMode('running')
 
@@ -1291,8 +1302,9 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
 
   const regenerateStep = useCallback(async (slug: string) => {
     if (!currentRunId) return
-    const order = PIPELINE_STEPS.findIndex((s) => s.slug === slug)
-    if (order === -1) return
+    const step = stepsRef.current.find((s) => s.agentSlug === slug)
+    if (!step) return
+    const order = step.order
     try {
       await consumeStepStream(currentRunId, order)
     } catch (err) {
