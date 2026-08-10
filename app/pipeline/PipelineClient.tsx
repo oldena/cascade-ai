@@ -693,7 +693,6 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
     return initStepsForPipeline(DEFAULT_PIPELINE, savedCeoName)
   })
   const PIPELINE_STEPS = (PIPELINE_DEFINITIONS[selectedPipelineType] ?? PIPELINE_DEFINITIONS[DEFAULT_PIPELINE]).steps
-  stepsRef.current = steps
   const [error, setError] = useState<string | null>(null)
   const [recentRuns, setRecentRuns] = useState<PipelineRun[]>(initialRuns)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -705,6 +704,7 @@ export function PipelineClient({ recentRuns: initialRuns }: Props) {
   const pollingRef = useRef<boolean>(false)
   const abortRef = useRef<boolean>(false)
   const stepsRef = useRef<StepState[]>([])
+  stepsRef.current = steps
   // Rich brief: file attachment + URLs
   const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null)
   const [urls, setUrls] = useState<string[]>([''])
